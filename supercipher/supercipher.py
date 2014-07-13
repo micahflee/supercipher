@@ -1,28 +1,17 @@
 import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile
 from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey
+from scfile import SuperCipherFile
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
 
 gpg = GnuPG()
 
-def SuperCipherFile(object):
-    def __init__(self):
-        self.MAGIC_NUMBER = 0xEBA34B1C
-
-    @staticmethod
-    def version_bytes(self):
-        strs = version.split('.')
-        return chr(int(strs[0])) + chr(int(strs[1])) + chr(int(strs[2]))
-
-def random_string(num_bytes):
-    b = os.urandom(num_bytes)
-    return base64.b32encode(b).lower().replace('=','')
-
 def get_tmp_dir():
     try:
         while True:
-            tmp_dir = os.path.join('/tmp', 'supercipher_{0}'.format(random_string(4)))
+            random_string = base64.b32encode(os.urandom(4)).lower().replace('=','')
+            tmp_dir = os.path.join('/tmp', 'supercipher_{0}'.format(random_string))
             if not os.path.exists(tmp_dir):
                 os.makedirs(tmp_dir, 0700)
                 return tmp_dir
