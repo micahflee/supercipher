@@ -105,7 +105,7 @@ class SuperCipherFile(object):
         # if there's a pubkey wrapper, decrypt that first 
         if bool(ord(self.ciphers) & self.CIPHERS['pubkey']):
             print 'Decrypting pubkey layer'
-            gpg.pubkey_decrypt(ciphertext_filename)
+            gpg.pubkey_decrypt(self.ciphertext_filename)
             self.ciphertext_filename_delete_and_truncate()
 
         # reverse the order of ciphers list
