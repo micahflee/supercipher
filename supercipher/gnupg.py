@@ -3,7 +3,7 @@ import subprocess, os
 class InvalidPubkeyLength(Exception): pass
 class InvalidPubkeyNotHex(Exception): pass
 class MissingPubkey(Exception): pass
-class MissingSecKey(Exception): pass
+class MissingSeckey(Exception): pass
 class InvalidDecryptionPassphrase(Exception): pass
 
 class GnuPG(object):
@@ -35,7 +35,7 @@ class GnuPG(object):
 
     def symmetric_decrypt(self, passphrase, filename):
         output_filename = os.path.splitext(filename)[0]
-        outfile = open(output_filename, 'rb')
+        outfile = open(output_filename, 'wb')
 
         p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         stdoutdata, stderrdata = p.communicate(passphrase)
@@ -55,7 +55,7 @@ class GnuPG(object):
 
     def pubkey_decrypt(self, filename):
         output_filename = os.path.splitext(filename)[0]
-        outfile = open(output_filename, 'rb')
+        outfile = open(output_filename, 'wb')
 
         p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--use-agent', '--decrypt', filename], stdout=subprocess.PIPE)
         buf = None

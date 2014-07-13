@@ -24,7 +24,7 @@ class SuperCipherFile(object):
         return chr(int(strs[0])) + chr(int(strs[1])) + chr(int(strs[2]))
 
     def bytes_to_version(self, bytes):
-        return '{0}.{1}.{2}'.format(str(int(bytes[0])), int(bytes[1]), int(bytes[2]))
+        return '{0}.{1}.{2}'.format(str(ord(bytes[0])), ord(bytes[1]), ord(bytes[2]))
 
     def save(self, salt, ciphertext_filename, output_filename, pubkey=False):
         self.salt = salt
@@ -84,22 +84,33 @@ class SuperCipherFile(object):
         self.salt = salt
 
         # how many times was this encrypted?
-        crypt_count = bin(self.ciphers).count('1')
+        crypt_count = bin(ord(self.ciphers)).count('1')
         ciphertext_filename = os.path.join(tmp_dir, 'archive.tar.gz')
         for i in range(crypt_count):
             ciphertext_filename += '.gpg'
 
+        # write ciphertext file
+        print 'Writing ciphertext file to disk'
+        outfile = open(ciphertext_filename, 'wb')
+        buf = None
+        while buf != '':
+            buf = infile.read(1048576)
+            outfile.write(buf)
+
         # if there's a pubkey wrapper, decrypt that first 
-        if bool(self.ciphers & self.CIPHERS['pubkey']):
+        if bool(ord(self.ciphers) & self.CIPHERS['pubkey']):
+            print 'Decrypting pubkey layer'
             gpg.pubkey_decrypt(ciphertext_filename)
             ciphertext_filename = self.delete_and_truncate(ciphertext_filename)
 
         # decrypt all the layers of symmetric encryption
         for i in range(crypt_count-1):
+            print 'Decrypting symmetric layer'
             gpg.symmetric_decrypt(ciphertext_filename)
             ciphertext_filename = self.delete_and_truncate(ciphertext_filename)
 
         # extract
+        print 'Extracting'
         archive_filename = ciphertext_filename
         if not tarfile.is_tarfile(archive_filename):
             raise InvalidArchive

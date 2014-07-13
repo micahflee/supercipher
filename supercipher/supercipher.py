@@ -1,5 +1,5 @@
 import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile
-from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSecKey, InvalidDecryptionPassphrase 
+from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase 
 from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -129,7 +129,7 @@ def decrypt(filename):
         print 'This file appears to have been created with a newer version of SuperCipher. Please upgrade and try again.'
     except InvalidArchive:
         print 'Something went wrong during the decryption.'
-    except MissingSecKey: 
+    except MissingSeckey:
         print 'Cannot decrypt SuperCipher file, you do not have the right secret key.'
     except InvalidDecryptionPassphrase:
         print 'Invalid passphrase.'
