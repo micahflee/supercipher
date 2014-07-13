@@ -48,10 +48,11 @@ class GnuPG(object):
 
         returncode = p.wait()
         if returncode != 0:
+            print 'returncode', returncode
             raise InvalidDecryptionPassphrase
 
     def pubkey_encrypt(self, filename, pubkey):
-        subprocess.check_call([self.gpg_bin, '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--hidden-recipient', pubkey, filename])
+        subprocess.check_call([self.gpg_bin, '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
 
     def pubkey_decrypt(self, filename):
         output_filename = os.path.splitext(filename)[0]
@@ -65,5 +66,6 @@ class GnuPG(object):
 
         returncode = p.wait()
         if returncode != 0:
+            print 'returncode', returncode
             raise MissingSeckey
 

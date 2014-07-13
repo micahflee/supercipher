@@ -5,6 +5,8 @@ from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, I
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
 
+ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
+
 gpg = GnuPG()
 
 def get_tmp_dir():
@@ -22,16 +24,18 @@ def get_tmp_dir():
 def destroy_tmp_dir(tmp_dir):
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
-def get_passphrase():
-    valid_passphrase = False
-    while not valid_passphrase:
-        # TODO: hide input
+def get_passphrase(ask_twice=False):
+    if ask_twice:
+        valid_passphrase = False
+        while not valid_passphrase:
+            passphrase = raw_input('Enter passphrase: ')
+            passphrase2 = raw_input('Retype passphrase: ')
+            if passphrase == passphrase2:
+                valid_passphrase = True
+            else:
+                print 'Passwords do not match. Try again:'
+    else:
         passphrase = raw_input('Enter passphrase: ')
-        passphrase2 = raw_input('Retype passphrase: ')
-        if passphrase == passphrase2:
-            valid_passphrase = True
-        else:
-            print 'Passwords do not match. Try again:'
 
     return passphrase
 
@@ -47,7 +51,8 @@ def compress(filename, archive_filename):
         tar.add(filename, recursive=False, filter=reset)
 
 # stretch passphrase into 6 new passphrases
-def stretch_passphrase(passphrase, salt, ciphers):
+def stretch_passphrase(passphrase, salt):
+    global ciphers
     passphrases = {}
     sys.stdout.write('Deriving passphrases for each cipher:')
     sys.stdout.flush()
@@ -63,8 +68,8 @@ def stretch_passphrase(passphrase, salt, ciphers):
     return passphrases
 
 # symetrically encrypt using each cipher and passphrase
-def symmetric_encrypt(archive_filename, passphrases, ciphers):
-    global gpg
+def symmetric_encrypt(archive_filename, passphrases):
+    global gpg, ciphers
     current_filename = archive_filename
     sys.stdout.write('Encrypting with each cipher:')
     sys.stdout.flush()
@@ -92,17 +97,15 @@ def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
 
     salt = os.urandom(16)
-    ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
-
     tmp_dir = get_tmp_dir()
 
     try:
         archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
         compress(filename, archive_filename)
 
-        passphrase = get_passphrase()
-        passphrases = stretch_passphrase(passphrase, salt, ciphers)
-        current_filename = symmetric_encrypt(archive_filename, passphrases, ciphers)
+        passphrase = get_passphrase(True)
+        passphrases = stretch_passphrase(passphrase, salt)
+        current_filename = symmetric_encrypt(archive_filename, passphrases)
         current_filename = pubkey_encrypt(current_filename, pubkey)
 
         # write the supercipher file
@@ -122,9 +125,12 @@ def decrypt(filename):
     tmp_dir = get_tmp_dir()
     plaintext_dir = os.path.dirname(filename)
 
+    passphrase = get_passphrase()
+    passphrases = stretch_passphrase(passphrase, salt, ciphers)
+
     try:
         scf = SuperCipherFile(version)
-        plaintext_filename = scf.load_and_decrypt(gpg, filename, plaintext_dir, tmp_dir)
+        plaintext_filename = scf.load_and_decrypt(gpg, passphrases, filename, plaintext_dir, tmp_dir)
         print 'Decrypted file is: {0}'.format(plaintext_filename)
     except InvalidSuperCipherFile:
         print '{0} does not appear to be a valid SuperCipher file'.format(filename)

@@ -61,7 +61,7 @@ class SuperCipherFile(object):
         filename = os.path.splitext(filename)[0]
         return filename
 
-    def load_and_decrypt(self, gpg, supercipher_filename, plaintext_dir, tmp_dir):
+    def load_and_decrypt(self, gpg, passphrases, supercipher_filename, plaintext_dir, tmp_dir):
         infile = open(supercipher_filename, 'rb')
 
         # file must be at least 24 bytes, plus ciphertext
