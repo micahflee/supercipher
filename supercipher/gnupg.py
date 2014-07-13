@@ -1,8 +1,8 @@
 import subprocess
 
-class InvalidPubkeyLength: pass
-class InvalidPubkeyNotHex: pass
-class MissingPubkey: pass
+class InvalidPubkeyLength(Exception): pass
+class InvalidPubkeyNotHex(Exception): pass
+class MissingPubkey(Exception): pass
 
 class GnuPG(object):
 
