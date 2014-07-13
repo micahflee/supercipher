@@ -105,8 +105,8 @@ def encrypt(filename, pubkey):
 
     # write the supercipher file
     supercipher_filename = '{0}.sc'.format(filename)
-    f = SuperCipherFile(version)
-    f.save(salt, current_filename, supercipher_filename, bool(pubkey))
+    f = SuperCipherFile()
+    f.save(version, salt, current_filename, supercipher_filename, bool(pubkey))
     print 'Superenciphered file: {0}'.format(supercipher_filename)
 
     # clean up

@@ -1,5 +1,5 @@
 class SuperCipherFile(object):
-    def __init__(self, version): 
+    def __init__(self): 
         self.MAGIC_NUMBER = '\xEB\xA3\x4B\x1C'
         self.CIPHERS = {
             '3des':        0b10000000,
@@ -13,11 +13,14 @@ class SuperCipherFile(object):
 
         self.version = version
 
-    def version_bytes(self):
-        strs = self.version.split('.')
+    def version_to_bytes(self, version):
+        strs = version.split('.')
         return chr(int(strs[0])) + chr(int(strs[1])) + chr(int(strs[2]))
 
-    def save(self, salt, ciphertext_filename, output_filename, pubkey=False):
+    def bytes_to_version(self, bytes):
+        return '{0}.{1}.{2}'.format(str(int(bytes[0])), int(bytes[1])), int(bytes[2])))
+
+    def save(self, version, salt, ciphertext_filename, output_filename, pubkey=False):
         self.salt = salt
         outfile = open(output_filename, 'wb')
 
@@ -25,7 +28,7 @@ class SuperCipherFile(object):
         outfile.write(self.MAGIC_NUMBER)
 
         # write version (3 bytes)
-        outfile.write(self.version_bytes())
+        outfile.write(self.version_to_bytes(self.version))
 
         # write ciphers
         ciphers = self.CIPHERS['3des'] | self.CIPHERS['cast5'] | self.CIPHERS['blowfish'] | \
@@ -43,3 +46,7 @@ class SuperCipherFile(object):
         infile.close()
 
         outfile.close()
+
+    def load(self, supercipher_filename, tmp_dir):
+        pass
+
