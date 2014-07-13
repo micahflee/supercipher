@@ -1,4 +1,4 @@
-import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile
+import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, getpass
 from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase 
 from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
 
@@ -28,14 +28,14 @@ def get_passphrase(ask_twice=False):
     if ask_twice:
         valid_passphrase = False
         while not valid_passphrase:
-            passphrase = raw_input('Enter passphrase: ')
-            passphrase2 = raw_input('Retype passphrase: ')
+            passphrase = getpass.getpass('Enter passphrase: ')
+            passphrase2 = getpass.getpass('Retype passphrase: ')
             if passphrase == passphrase2:
                 valid_passphrase = True
             else:
                 print 'Passwords do not match. Try again:'
     else:
-        passphrase = raw_input('Enter passphrase: ')
+        passphrase = getpass.getpass('Enter passphrase: ')
 
     return passphrase
 
