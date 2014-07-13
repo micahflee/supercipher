@@ -96,19 +96,22 @@ def encrypt(filename, pubkey):
 
     tmp_dir = get_tmp_dir()
 
-    archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
-    compress(filename, archive_filename)
+    try:
+        archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
+        compress(filename, archive_filename)
 
-    passphrase = get_passphrase()
-    passphrases = stretch_passphrase(passphrase, salt, ciphers)
-    current_filename = symmetric_encrypt(archive_filename, passphrases, ciphers)
-    current_filename = pubkey_encrypt(current_filename, pubkey)
+        passphrase = get_passphrase()
+        passphrases = stretch_passphrase(passphrase, salt, ciphers)
+        current_filename = symmetric_encrypt(archive_filename, passphrases, ciphers)
+        current_filename = pubkey_encrypt(current_filename, pubkey)
 
-    # write the supercipher file
-    supercipher_filename = '{0}.sc'.format(filename)
-    scf = SuperCipherFile(version)
-    scf.save(salt, current_filename, supercipher_filename, bool(pubkey))
-    print 'Superenciphered file: {0}'.format(supercipher_filename)
+        # write the supercipher file
+        supercipher_filename = '{0}.sc'.format(filename)
+        scf = SuperCipherFile(version)
+        scf.save(salt, current_filename, supercipher_filename, bool(pubkey))
+        print 'Superenciphered file: {0}'.format(supercipher_filename)
+    except KeyboardInterrupt:
+        print 'Canceling and cleaning up'
 
     # clean up
     destroy_tmp_dir(tmp_dir)
@@ -133,6 +136,8 @@ def decrypt(filename):
         print 'Cannot decrypt SuperCipher file, you do not have the right secret key.'
     except InvalidDecryptionPassphrase:
         print 'Invalid passphrase.'
+    except KeyboardInterrupt:
+        print 'Canceling and cleaning up'
 
     # clean up
     destroy_tmp_dir(tmp_dir)
