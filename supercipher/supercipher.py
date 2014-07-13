@@ -103,9 +103,10 @@ def encrypt(filename, pubkey):
     current_filename = symmetrically_encrypt(archive_filename, passphrases, ciphers)
     current_filename = pubkey_encrypt(current_filename, pubkey)
 
-    # rename file
+    # write the supercipher file
     supercipher_filename = '{0}.sc'.format(filename)
-    os.rename(current_filename, supercipher_filename)
+    f = SuperCipherFile(version)
+    f.save(salt, current_filename, supercipher_filename, bool(pubkey))
     print 'Superenciphered file: {0}'.format(supercipher_filename)
 
     # clean up
