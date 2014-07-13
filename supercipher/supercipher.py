@@ -86,6 +86,15 @@ def symmetrically_encrypt(archive_filename, passphrases, ciphers):
     sys.stdout.write('\n')
     return current_filename
 
+# encrypt to the public key, if it was given
+def pubkey_encrypt(current_filename, pubkey):
+    if pubkey:
+        subprocess.Popen(['/usr/bin/gpg', '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--hidden-recipient', pubkey, current_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        os.remove(current_filename)
+        current_filename += '.gpg'
+
+    return current_filename
+
 def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
 
@@ -100,6 +109,7 @@ def encrypt(filename, pubkey):
     passphrase = get_passphrase()
     passphrases = stretch_passphrase(passphrase, salt, ciphers)
     current_filename = symmetrically_encrypt(archive_filename, passphrases, ciphers)
+    current_filename = pubkey_encrypt(current_filename, pubkey)
 
     # rename file
     supercipher_filename = '{0}.sc'.format(filename)
