@@ -1,7 +1,10 @@
-import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, subprocess
+import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile
+from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
+
+gpg = GnuPG()
 
 def SuperCipherFile(object):
     def __init__(self):
@@ -72,28 +75,28 @@ def stretch_passphrase(passphrase, salt, ciphers):
 
 # symetrically encrypt using each cipher and passphrase
 def symmetrically_encrypt(archive_filename, passphrases, ciphers):
+    global gpg
     current_filename = archive_filename
     sys.stdout.write('Encrypting with each cipher:')
     sys.stdout.flush()
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        p = subprocess.Popen(['/usr/bin/gpg', '--batch', '--no-tty', '--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, current_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        p.communicate(passphrases[cipher])
-        p.wait()
+        gpg.symmetrically_encrypt(cipher, passphrases[cipher], current_filename)
         os.remove(current_filename)
         current_filename += '.gpg'
     sys.stdout.write('\n')
     return current_filename
 
 # encrypt to the public key, if it was given
-def pubkey_encrypt(current_filename, pubkey):
+def pubkey_encrypt(filename, pubkey):
     if pubkey:
-        subprocess.Popen(['/usr/bin/gpg', '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--hidden-recipient', pubkey, current_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        os.remove(current_filename)
-        current_filename += '.gpg'
+        global gpg
+        gpg.pubkey_encrypt(filename, pubkey)
+        os.remove(filename)
+        filename += '.gpg'
 
-    return current_filename
+    return filename
 
 def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
@@ -159,9 +162,17 @@ def main():
         print '{0} is not a file'.format(filename)
         sys.exit(0)
     if pubkey:
-        err, err_message = validate_pubkey(pubkey)
-        if err:
-            print err_message
+        global gpg
+        try:
+            gpg.valid_pubkey(pubkey)
+        except InvalidPubkeyLength:
+            print 'Pubkey fingerprint is invalid, must be 40 characters'
+            sys.exit(0)
+        except InvalidPubkeyNotHex:
+            print 'Pubkey fingerprint is invalid, must be hexadecimal'
+            sys.exit(0)
+        except MissingPubkey:
+            print 'You do not have a pubkey with that fingerprint'
             sys.exit(0)
 
     if is_decrypt:
