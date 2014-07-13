@@ -2,5 +2,13 @@ include LICENSE
 include README.md
 include supercipher/version
 include supercipher_gui/icon.png
+include supercipher_gui/templates/base.html
 include supercipher_gui/templates/index.html
+include supercipher_gui/templates/encrypt.html
+include supercipher_gui/templates/decrypt.html
 include supercipher_gui/static/style.css
+include supercipher_gui/static/loader.png
+include supercipher_gui/static/jquery-1.11.1.min.js
+include supercipher_gui/static/index.js
+include supercipher_gui/static/encrypt.js
+include supercipher_gui/static/decrypt.js

@@ -1,9 +1,17 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" type="text/css" media="all" href="static/style.css" />
-  </head>
-  <body>
-    <h1>Supercipher</h1>
-  </body>
-</html>
+{% extends "base.html" %}
+
+{% block extrahead %}
+<script src="static/index.js"></script>
+{% endblock %}
+
+{% block body %}
+<div id="index">
+  <p>Which would you like to do?</p>
+
+  <p class="nav">
+    <a class="button" href="encrypt">Encrypt</a>
+    <a class="button" href="decrypt">Decrypt</a>
+  </p>
+</div>
+{% endblock %}
+

@@ -34,9 +34,7 @@ class Window(QWebView):
         global window_icon
         QWebView.__init__(self)
         self.setWindowTitle("SuperCipher")
-        self.resize(580, 400)
-        self.setMinimumSize(580, 400)
-        self.setMaximumSize(580, 400)
+        self.resize(300, 200)
         self.setWindowIcon(window_icon)
         self.load(QUrl("http://127.0.0.1:{0}".format(webapp_port)))
 
