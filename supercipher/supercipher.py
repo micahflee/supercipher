@@ -58,7 +58,6 @@ def encrypt(filename, pubkey):
 
     # stretch passphrase into 6 keys
     salt = os.urandom(16)
-    rounds = 200000
     ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
     passphrases = {}
     sys.stdout.write('Deriving passphrases for each cipher:')
@@ -66,7 +65,7 @@ def encrypt(filename, pubkey):
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        passphrase = hashlib.pbkdf2_hmac('sha512', passphrase, salt, rounds)
+        passphrase = hashlib.pbkdf2_hmac('sha512', passphrase, salt, 200000)
         passphrase = scrypt.hash(passphrase, salt, N=2**14, r=8, p=1)
         passphrase = base64.b64encode(passphrase)
         passphrases[cipher] = passphrase
