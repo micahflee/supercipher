@@ -62,31 +62,6 @@ def stretch_passphrase(passphrase, salt, ciphers):
 
     return passphrases
 
-# symetrically encrypt using each cipher and passphrase
-def symmetrically_encrypt(archive_filename, passphrases, ciphers):
-    global gpg
-    current_filename = archive_filename
-    sys.stdout.write('Encrypting with each cipher:')
-    sys.stdout.flush()
-    for cipher in ciphers:
-        sys.stdout.write(' {0}'.format(cipher))
-        sys.stdout.flush()
-        gpg.symmetrically_encrypt(cipher, passphrases[cipher], current_filename)
-        os.remove(current_filename)
-        current_filename += '.gpg'
-    sys.stdout.write('\n')
-    return current_filename
-
-# encrypt to the public key, if it was given
-def pubkey_encrypt(filename, pubkey):
-    if pubkey:
-        global gpg
-        gpg.pubkey_encrypt(filename, pubkey)
-        os.remove(filename)
-        filename += '.gpg'
-
-    return filename
-
 def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
 
@@ -100,13 +75,13 @@ def encrypt(filename, pubkey):
 
     passphrase = get_passphrase()
     passphrases = stretch_passphrase(passphrase, salt, ciphers)
-    current_filename = symmetrically_encrypt(archive_filename, passphrases, ciphers)
+    current_filename = symmetric_encrypt(archive_filename, passphrases, ciphers)
     current_filename = pubkey_encrypt(current_filename, pubkey)
 
     # write the supercipher file
     supercipher_filename = '{0}.sc'.format(filename)
-    f = SuperCipherFile()
-    f.save(version, salt, current_filename, supercipher_filename, bool(pubkey))
+    f = SuperCipherFile(version)
+    f.save(salt, current_filename, supercipher_filename, bool(pubkey))
     print 'Superenciphered file: {0}'.format(supercipher_filename)
 
     # clean up

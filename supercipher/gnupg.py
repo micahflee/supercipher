@@ -1,8 +1,10 @@
-import subprocess
+import subprocess, os
 
 class InvalidPubkeyLength(Exception): pass
 class InvalidPubkeyNotHex(Exception): pass
 class MissingPubkey(Exception): pass
+class MissingSecKey(Exception): pass
+class InvalidDecryptionPassphrase(Exception): pass
 
 class GnuPG(object):
 
@@ -26,12 +28,42 @@ class GnuPG(object):
 
         return True 
 
-    def symmetrically_encrypt(self, cipher, passphrase, filename):
+    def symmetric_encrypt(self, cipher, passphrase, filename):
         p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         p.communicate(passphrase)
         p.wait()
 
-    def pubkey_encrypt(self, filename, pubkey):
-        subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--hidden-recipient', pubkey, filename])
+    def symmetric_decrypt(self, passphrase, filename):
+        output_filename = os.path.splitext(filename)[0]
+        outfile = open(output_filename, 'rb')
 
+        p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        stdoutdata, stderrdata = p.communicate(passphrase)
+        
+        outfile.write(stdoutdata)
+        buf = None
+        while buf != '':
+            buf = p.stdout.read(1048576)
+            outfile.write(buf)
+
+        returncode = p.wait()
+        if returncode != 0:
+            raise InvalidDecryptionPassphrase
+
+    def pubkey_encrypt(self, filename, pubkey):
+        subprocess.check_call([self.gpg_bin, '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--hidden-recipient', pubkey, filename])
+
+    def pubkey_decrypt(self, filename):
+        output_filename = os.path.splitext(filename)[0]
+        outfile = open(output_filename, 'rb')
+
+        p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--use-agent', '--decrypt', filename], stdout=subprocess.PIPE)
+        buf = None
+        while buf != '':
+            buf = p.stdout.read(1048576)
+            outfile.write(buf)
+
+        returncode = p.wait()
+        if returncode != 0:
+            raise MissingSeckey
 
