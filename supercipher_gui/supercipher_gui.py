@@ -34,36 +34,9 @@ class Window(QWebView):
         global window_icon
         QWebView.__init__(self)
         self.setWindowTitle("SuperCipher")
-        self.resize(300, 200)
+        self.resize(400, 300)
         self.setWindowIcon(window_icon)
         self.load(QUrl("http://127.0.0.1:{0}".format(webapp_port)))
-
-def alert(msg, icon=QMessageBox.NoIcon):
-    global window_icon
-    dialog = QMessageBox()
-    dialog.setWindowTitle("SuperCipher")
-    dialog.setWindowIcon(window_icon)
-    dialog.setText(msg)
-    dialog.setIcon(icon)
-    dialog.exec_()
-
-def select_file(filename=None):
-    # get filename, either from argument or file chooser dialog
-    if not filename:
-        filename = QFileDialog.getOpenFileName(caption='Select file to encrypt', options=QFileDialog.ReadOnly)
-        if not filename:
-            return False, False
-
-        filename = str(filename)
-
-    # validate filename
-    if not os.path.isfile(filename):
-        alert('{0} is not a file'.format(filename), QMessageBox.Warning)
-        return False, False
-
-    filename = os.path.abspath(filename)
-    basename = os.path.basename(filename)
-    return filename, basename
 
 def choose_port():
     # let the OS choose a port
@@ -95,6 +68,7 @@ def main():
     window_icon = QIcon("{0}/icon.png".format(supercipher_gui_dir))
 
     # initialize the web app
+    webapp.window_icon = window_icon
     webapp.filename = filename
     webapp.is_decrypt = is_decrypt
     webapp.pubkey = pubkey

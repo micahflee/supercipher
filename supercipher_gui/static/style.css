@@ -8,10 +8,17 @@ body {
 
 #wrapper {
   margin: 20px;
+  text-align: center;
 }
 
-#index {
+#encrypt #file {
+  padding: 10px;
+  border: 1px solid #999999;
+}
+
+#loading {
   text-align: center;
+  margin: 20px 0;
 }
 
 p.nav {
