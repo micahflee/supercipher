@@ -125,23 +125,6 @@ def encrypt(filename, pubkey):
 def decrypt(filename):
     print 'Decryption is not implemented yet'
 
-def validate_pubkey(pubkey):
-    if len(pubkey) != 40:
-        return True, 'Pubkey fingerprint is invalid, must be 40 characters'
-
-    try:
-        i = int(pubkey, 16)
-    except ValueError:
-        return True, 'Pubkey fingerprint is invalid, must be hexadecimal'
-
-    try:
-        devnull = open('/dev/null', 'w')
-        subprocess.check_call(['/usr/bin/gpg', '--batch', '--no-tty', '--with-colons', '--list-keys', pubkey], stdin=devnull, stdout=devnull, stderr=devnull)
-    except subprocess.CalledProcessError:
-        return True, 'You do not have a pubkey with that fingerprint'
-
-    return False, False
-
 def main():
     # parse arguments
     parser = argparse.ArgumentParser()
