@@ -4,8 +4,8 @@ class InvalidSuperCipherFile(Exception): pass
 class FutureFileVersion(Exception): pass
 class InvalidArchive(Exception): pass
 
-class SuperCipherFile(object, version):
-    def __init__(self): 
+class SuperCipherFile(object):
+    def __init__(self, version): 
         self.MAGIC_NUMBER = '\xEB\xA3\x4B\x1C'
         self.CIPHERS = {
             '3des':        0b10000000,
@@ -24,7 +24,7 @@ class SuperCipherFile(object, version):
         return chr(int(strs[0])) + chr(int(strs[1])) + chr(int(strs[2]))
 
     def bytes_to_version(self, bytes):
-        return '{0}.{1}.{2}'.format(str(int(bytes[0])), int(bytes[1])), int(bytes[2])))
+        return '{0}.{1}.{2}'.format(str(int(bytes[0])), int(bytes[1]), int(bytes[2]))
 
     def save(self, salt, ciphertext_filename, output_filename, pubkey=False):
         self.salt = salt
@@ -104,5 +104,8 @@ class SuperCipherFile(object, version):
         if not tarfile.is_tarfile(archive_filename):
             raise InvalidArchive
         tar = tarfile.TarFile(archive_filename)
+        names = tar.getnames()
         tar.extractall(plaintext_dir)
+
+        return os.path.join(plaintext_dir, names.pop())
 

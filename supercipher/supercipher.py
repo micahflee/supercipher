@@ -1,6 +1,6 @@
 import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile
-from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey
-from scfile import SuperCipherFile
+from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSecKey, InvalidDecryptionPassphrase 
+from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
@@ -62,6 +62,32 @@ def stretch_passphrase(passphrase, salt, ciphers):
 
     return passphrases
 
+# symetrically encrypt using each cipher and passphrase
+def symmetric_encrypt(archive_filename, passphrases, ciphers):
+    global gpg
+    current_filename = archive_filename
+    sys.stdout.write('Encrypting with each cipher:')
+    sys.stdout.flush()
+    for cipher in ciphers:
+        sys.stdout.write(' {0}'.format(cipher))
+        sys.stdout.flush()
+        gpg.symmetric_encrypt(cipher, passphrases[cipher], current_filename)
+        os.remove(current_filename)
+        current_filename += '.gpg'
+    sys.stdout.write('\n')
+    return current_filename
+
+# encrypt to the public key, if it was given
+def pubkey_encrypt(filename, pubkey):
+    if pubkey:
+        global gpg
+        gpg.pubkey_encrypt(filename, pubkey)
+        os.remove(filename)
+        filename += '.gpg'
+
+    return filename
+
+
 def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
 
@@ -80,15 +106,36 @@ def encrypt(filename, pubkey):
 
     # write the supercipher file
     supercipher_filename = '{0}.sc'.format(filename)
-    f = SuperCipherFile(version)
-    f.save(salt, current_filename, supercipher_filename, bool(pubkey))
+    scf = SuperCipherFile(version)
+    scf.save(salt, current_filename, supercipher_filename, bool(pubkey))
     print 'Superenciphered file: {0}'.format(supercipher_filename)
 
     # clean up
     destroy_tmp_dir(tmp_dir)
 
 def decrypt(filename):
-    print 'Decryption is not implemented yet'
+    print 'Decrypting file {0}'.format(filename)
+
+    tmp_dir = get_tmp_dir()
+    plaintext_dir = os.path.dirname(filename)
+
+    try:
+        scf = SuperCipherFile(version)
+        plaintext_filename = scf.load_and_decrypt(gpg, filename, plaintext_dir, tmp_dir)
+        print 'Decrypted file is: {0}'.format(plaintext_filename)
+    except InvalidSuperCipherFile:
+        print '{0} does not appear to be a valid SuperCipher file'.format(filename)
+    except FutureFileVersion:
+        print 'This file appears to have been created with a newer version of SuperCipher. Please upgrade and try again.'
+    except InvalidArchive:
+        print 'Something went wrong during the decryption.'
+    except MissingSecKey: 
+        print 'Cannot decrypt SuperCipher file, you do not have the right secret key.'
+    except InvalidDecryptionPassphrase:
+        print 'Invalid passphrase.'
+
+    # clean up
+    destroy_tmp_dir(tmp_dir)
 
 def main():
     # parse arguments
