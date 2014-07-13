@@ -43,15 +43,9 @@ def get_passphrase():
 
     return passphrase
 
-def encrypt(filename, pubkey):
-    print 'Encrypting file {0}'.format(filename)
-
-    tmp_dir = get_tmp_dir()
-    passphrase = get_passphrase()
-
-    # compress the plaintext file, preserving its filename
+# compress the plaintext file, preserving its filename
+def compress(filename, archive_filename):
     print 'Compressing'
-    archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
     def reset(tarinfo):
         tarinfo.name = os.path.basename(tarinfo.name)
         tarinfo.uid = tarinfo.gid = 0
@@ -60,9 +54,8 @@ def encrypt(filename, pubkey):
     with tarfile.open(archive_filename, 'w:gz') as tar:
         tar.add(filename, recursive=False, filter=reset)
 
-    # stretch passphrase into 6 keys
-    salt = os.urandom(16)
-    ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
+# stretch passphrase into 6 new passphrases
+def stretch_passphrase(passphrase, salt, ciphers):
     passphrases = {}
     sys.stdout.write('Deriving passphrases for each cipher:')
     sys.stdout.flush()
@@ -74,9 +67,11 @@ def encrypt(filename, pubkey):
         passphrase = base64.b64encode(passphrase)
         passphrases[cipher] = passphrase
     sys.stdout.write('\n')
-    print passphrases
 
-    # symetrically encrypt using each cipher and passphrase
+    return passphrases
+
+# symetrically encrypt using each cipher and passphrase
+def symmetrically_encrypt(archive_filename, passphrases, ciphers):
     current_filename = archive_filename
     sys.stdout.write('Encrypting with each cipher:')
     sys.stdout.flush()
@@ -89,6 +84,22 @@ def encrypt(filename, pubkey):
         os.remove(current_filename)
         current_filename += '.gpg'
     sys.stdout.write('\n')
+    return current_filename
+
+def encrypt(filename, pubkey):
+    print 'Encrypting file {0}'.format(filename)
+
+    salt = os.urandom(16)
+    ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
+
+    tmp_dir = get_tmp_dir()
+
+    archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
+    compress(filename, archive_filename)
+
+    passphrase = get_passphrase()
+    passphrases = stretch_passphrase(passphrase, salt, ciphers)
+    current_filename = symmetrically_encrypt(archive_filename, passphrases, ciphers)
 
     # rename file
     supercipher_filename = '{0}.sc'.format(filename)
@@ -100,6 +111,23 @@ def encrypt(filename, pubkey):
 
 def decrypt(filename):
     print 'Decryption is not implemented yet'
+
+def validate_pubkey(pubkey):
+    if len(pubkey) != 40:
+        return True, 'Pubkey fingerprint is invalid, must be 40 characters'
+
+    try:
+        i = int(pubkey, 16)
+    except ValueError:
+        return True, 'Pubkey fingerprint is invalid, must be hexadecimal'
+
+    try:
+        devnull = open('/dev/null', 'w')
+        subprocess.check_call(['/usr/bin/gpg', '--batch', '--no-tty', '--with-colons', '--list-keys', pubkey], stdin=devnull, stdout=devnull, stderr=devnull)
+    except subprocess.CalledProcessError:
+        return True, 'You do not have a pubkey with that fingerprint'
+
+    return False, False
 
 def main():
     # parse arguments
@@ -120,6 +148,11 @@ def main():
     if not os.path.isfile(filename):
         print '{0} is not a file'.format(filename)
         sys.exit(0)
+    if pubkey:
+        err, err_message = validate_pubkey(pubkey)
+        if err:
+            print err_message
+            sys.exit(0)
 
     if is_decrypt:
         decrypt(filename)
