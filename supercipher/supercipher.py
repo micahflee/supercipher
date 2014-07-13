@@ -77,19 +77,23 @@ def encrypt(filename, pubkey):
     print passphrases
 
     # symetrically encrypt using each cipher and passphrase
-    print 'TODO: figure out how to use gpg --symmetric with --batch'
     current_filename = archive_filename
     sys.stdout.write('Encrypting with each cipher:')
     sys.stdout.flush()
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        p = subprocess.Popen(['/usr/bin/gpg', '--batch', '--no-tty', '--symmetric', '--cipher-algo', cipher, current_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(['/usr/bin/gpg', '--batch', '--no-tty', '--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, current_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         p.communicate(passphrases[cipher])
         p.wait()
         os.remove(current_filename)
         current_filename += '.gpg'
     sys.stdout.write('\n')
+
+    # rename file
+    supercipher_filename = '{0}.sc'.format(filename)
+    os.rename(current_filename, supercipher_filename)
+    print 'Superenciphered file: {0}'.format(supercipher_filename)
 
     # clean up
     destroy_tmp_dir(tmp_dir)
