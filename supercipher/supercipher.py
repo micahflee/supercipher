@@ -30,11 +30,7 @@ def get_tmp_dir():
 def destroy_tmp_dir(tmp_dir):
     shutil.rmtree(tmp_dir, ignore_errors=True)
 
-def encrypt(filename, pubkey):
-    print 'Encrypting file {0}'.format(filename)
-    tmp_dir = get_tmp_dir()
-
-    # get passphrase
+def get_passphrase():
     valid_passphrase = False
     while not valid_passphrase:
         # TODO: hide input
@@ -44,6 +40,14 @@ def encrypt(filename, pubkey):
             valid_passphrase = True
         else:
             print 'Passwords do not match. Try again:'
+
+    return passphrase
+
+def encrypt(filename, pubkey):
+    print 'Encrypting file {0}'.format(filename)
+
+    tmp_dir = get_tmp_dir()
+    passphrase = get_passphrase()
 
     # compress the plaintext file, preserving its filename
     print 'Compressing'
