@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=SuperCipher
+Comment=Encrypts a file with a passphrase using several ciphers
+Exec=/usr/bin/supercipher-gui
+Terminal=false
+Type=Application
+Icon=/usr/share/pixmaps/supercipher.xpm
+Categories=Utility;Security;System;

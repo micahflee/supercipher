@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include supercipher/version
+include supercipher_gui/icon.png
+include supercipher_gui/templates/index.html
+include supercipher_gui/static/style.css

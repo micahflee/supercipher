@@ -33,7 +33,7 @@ class Window(QWebView):
     def __init__(self, webapp_port):
         global window_icon
         QWebView.__init__(self)
-        self.setWindowTitle("Supercipher")
+        self.setWindowTitle("SuperCipher")
         self.resize(580, 400)
         self.setMinimumSize(580, 400)
         self.setMaximumSize(580, 400)
@@ -43,7 +43,7 @@ class Window(QWebView):
 def alert(msg, icon=QMessageBox.NoIcon):
     global window_icon
     dialog = QMessageBox()
-    dialog.setWindowTitle("Supercipher")
+    dialog.setWindowTitle("SuperCipher")
     dialog.setWindowIcon(window_icon)
     dialog.setText(msg)
     dialog.setIcon(icon)

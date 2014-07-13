@@ -1,0 +1,3 @@
+#!/usr/bin/env python
+import supercipher_gui
+supercipher_gui.main()

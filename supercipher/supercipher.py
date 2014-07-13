@@ -3,7 +3,7 @@ import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, sub
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
 
-def SupercipherFile(object):
+def SuperCipherFile(object):
     def __init__(self):
         self.MAGIC_NUMBER = 0xEBA34B1C
 
