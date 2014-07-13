@@ -125,13 +125,14 @@ def decrypt(filename):
     tmp_dir = get_tmp_dir()
     plaintext_dir = os.path.dirname(filename)
 
-    passphrase = get_passphrase()
-    passphrases = stretch_passphrase(passphrase, salt, ciphers)
-
     try:
         scf = SuperCipherFile(version)
-        plaintext_filename = scf.load_and_decrypt(gpg, passphrases, filename, plaintext_dir, tmp_dir)
+        scf.load(filename, tmp_dir)
+        passphrase = get_passphrase()
+        passphrases = stretch_passphrase(passphrase, scf.salt)
+        plaintext_filename = scf.decrypt(gpg, passphrases, plaintext_dir, ciphers)
         print 'Decrypted file is: {0}'.format(plaintext_filename)
+
     except InvalidSuperCipherFile:
         print '{0} does not appear to be a valid SuperCipher file'.format(filename)
     except FutureFileVersion:

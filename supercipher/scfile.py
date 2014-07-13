@@ -3,6 +3,7 @@ import os, tarfile
 class InvalidSuperCipherFile(Exception): pass
 class FutureFileVersion(Exception): pass
 class InvalidArchive(Exception): pass
+class DecryptBeforeLoading(Exception): pass
 
 class SuperCipherFile(object):
     def __init__(self, version): 
@@ -18,6 +19,7 @@ class SuperCipherFile(object):
         }
 
         self.version = version
+        self.infile = None
 
     def version_to_bytes(self, version):
         strs = version.split('.')
@@ -56,23 +58,22 @@ class SuperCipherFile(object):
 
         outfile.close()
 
-    def delete_and_truncate(self, filename):
-        os.remove(filename)
-        filename = os.path.splitext(filename)[0]
-        return filename
+    def ciphertext_filename_delete_and_truncate(self):
+        os.remove(self.ciphertext_filename)
+        self.ciphertext_filename = os.path.splitext(self.ciphertext_filename)[0]
 
-    def load_and_decrypt(self, gpg, passphrases, supercipher_filename, plaintext_dir, tmp_dir):
-        infile = open(supercipher_filename, 'rb')
+    def load(self, supercipher_filename, tmp_dir):
+        self.infile = open(supercipher_filename, 'rb')
 
         # file must be at least 24 bytes, plus ciphertext
         if os.stat(supercipher_filename).st_size <= 24:
             raise InvalidSuperCipherFile
 
         # read header data
-        magic_number = infile.read(4)
-        version = infile.read(3)
-        ciphers = infile.read(1)
-        salt = infile.read(16)
+        magic_number = self.infile.read(4)
+        version = self.infile.read(3)
+        ciphers = self.infile.read(1)
+        salt = self.infile.read(16)
 
         # validate headers
         if magic_number != self.MAGIC_NUMBER:
@@ -84,37 +85,45 @@ class SuperCipherFile(object):
         self.salt = salt
 
         # how many times was this encrypted?
-        crypt_count = bin(ord(self.ciphers)).count('1')
-        ciphertext_filename = os.path.join(tmp_dir, 'archive.tar.gz')
-        for i in range(crypt_count):
-            ciphertext_filename += '.gpg'
+        self.crypt_count = bin(ord(self.ciphers)).count('1')
+        self.ciphertext_filename = os.path.join(tmp_dir, 'archive.tar.gz')
+        for i in range(self.crypt_count):
+            self.ciphertext_filename += '.gpg'
 
         # write ciphertext file
         print 'Writing ciphertext file to disk'
-        outfile = open(ciphertext_filename, 'wb')
+        outfile = open(self.ciphertext_filename, 'wb')
         buf = None
         while buf != '':
-            buf = infile.read(1048576)
+            buf = self.infile.read(1048576)
             outfile.write(buf)
+
+    def decrypt(self, gpg, passphrases, plaintext_dir, ciphers):
+        if not self.infile:
+            raise DecryptBeforeLoading
 
         # if there's a pubkey wrapper, decrypt that first 
         if bool(ord(self.ciphers) & self.CIPHERS['pubkey']):
             print 'Decrypting pubkey layer'
             gpg.pubkey_decrypt(ciphertext_filename)
-            ciphertext_filename = self.delete_and_truncate(ciphertext_filename)
+            self.ciphertext_filename_delete_and_truncate()
+
+        # reverse the order of ciphers list
+        reversed_ciphers = ciphers[:]
+        reversed_ciphers.reverse()
 
         # decrypt all the layers of symmetric encryption
-        for i in range(crypt_count-1):
-            print 'Decrypting symmetric layer'
-            gpg.symmetric_decrypt(ciphertext_filename)
-            ciphertext_filename = self.delete_and_truncate(ciphertext_filename)
+        for cipher in reversed_ciphers:
+            print 'Decrypting symmetric layer with cipher {0}'.format(cipher)
+            gpg.symmetric_decrypt(self.ciphertext_filename, passphrases[cipher])
+            self.ciphertext_filename_delete_and_truncate()
 
         # extract
         print 'Extracting'
-        archive_filename = ciphertext_filename
+        archive_filename = self.ciphertext_filename
         if not tarfile.is_tarfile(archive_filename):
             raise InvalidArchive
-        tar = tarfile.TarFile(archive_filename)
+        tar = tarfile.open(archive_filename, 'r:gz')
         names = tar.getnames()
         tar.extractall(plaintext_dir)
 
