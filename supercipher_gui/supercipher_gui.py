@@ -1,4 +1,4 @@
-import os, sys, subprocess, inspect, platform, argparse, socket
+import os, sys, subprocess, inspect, platform, argparse, socket, json
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtWebKit import *
@@ -20,6 +20,27 @@ class Application(QApplication):
             self.setAttribute(Qt.AA_X11InitThreads, True)
 
         QApplication.__init__(self, sys.argv)
+
+class QtStuff(QObject):
+    select_file = pyqtSignal(name='selectFile')
+
+    def __init__(self):
+        QObject.__init__(self)
+        self.webapp = webapp
+        self.select_file.connect(self.select_file_trigger)
+
+    def select_file_trigger(self):
+        filename = QFileDialog.getOpenFileName(caption='Select file', options=QFileDialog.ReadOnly)
+        if not filename:
+            webapp.qtstuff_return = json.dumps({ 'error': True, 'error_type': 'canceled' })
+
+        filename = str(filename)
+        if not os.path.isfile(filename):
+            webapp.qtstuff_return = json.dumps({ 'error': True, 'error_type': 'invalid' })
+
+        filename = os.path.abspath(filename)
+        basename = os.path.basename(filename)
+        webapp.qtstuff_return = json.dumps({ 'error': False, 'filename': filename, 'basename': basename })
 
 class WebAppThread(QThread):
     def __init__(self, webapp_port):
@@ -72,6 +93,10 @@ def main():
     webapp.filename = filename
     webapp.is_decrypt = is_decrypt
     webapp.pubkey = pubkey
+
+    # QtStuff is to let webapp use Qt objects in the right thread
+    qtstuff = QtStuff()
+    webapp.qtstuff = qtstuff
 
     # run the web app in a new thread
     webapp_port = choose_port()

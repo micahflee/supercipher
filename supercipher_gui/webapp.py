@@ -15,6 +15,9 @@ is_decrypt = False
 pubkey = None
 window_icon = None
 
+qtstuff = None
+qtstuff_return = None
+
 @app.route("/")
 def index():
     return render_template('index.html')
@@ -29,17 +32,7 @@ def decrypt():
 
 @app.route('/select_file')
 def select_file():
-    # TODO: deal with Qt error
-    # QObject: Cannot create children for a parent that is in a different thread.
-    filename = QFileDialog.getOpenFileName(caption='Select file', options=QFileDialog.ReadOnly)
-    if not filename:
-        return json.dumps({ 'error': True, 'error_type': 'canceled' })
-
-    filename = str(filename)
-    if not os.path.isfile(filename):
-        return json.dumps({ 'error': True, 'error_type': 'invalid' })
-
-    filename = os.path.abspath(filename)
-    basename = os.path.basename(filename)
-    return json.dumps({ 'error': False, 'filename': filename, 'basename': basename })
+    global qtstuff, qtstuff_return
+    qtstuff.select_file.emit()
+    return qtstuff_return
 

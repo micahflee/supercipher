@@ -1,6 +1,8 @@
 $(function(){
+  alert('before ajax');
   // select file to encrypt
   select_file(function(data){
+      alert('after success');
       data = JSON.parse(data);
       
       // handle errors
