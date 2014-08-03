@@ -9,6 +9,7 @@ It stretches the passphrase into several keys (using multiple key derivation fun
 If you supply a public key, it encrypts the file one final time using public key encryption, requiring both the public key and passphrase to decrypt.
 
 The passphrase is stretched into different keys using: PBKDF2, scrypt
+
 Symmetric encryption is outsourced to GPG, and ciphers used include: 3DES, CAST5, BLOWFISH, AES256, TWOFISH, CAMELLIA256
 
 ## For Developers
@@ -21,11 +22,12 @@ sudo apt-get install build-essential python-all fakeroot python-stdeb python-fla
 
 SuperCipher file format:
 
-    [4 bytes  ] Magic number 0xEBA34B1C
-    [3 bytes  ] SuperCipher version major.minor.patch
-    [1 byte   ] Ciphers used: 1 is use, 0 is don't use, in this order:
-                3DES, CAST5, BLOWFISH, AES256, TWOFISH, CAMELLIA256, pubkey
-                (the last bit is always 0)
-    [16 bytes ] Salt for PBKDF2 key derivation
-    [until EOF] Ciphertext
-
+```
+[4 bytes  ] Magic number 0xEBA34B1C
+[3 bytes  ] SuperCipher version major.minor.patch
+[1 byte   ] Ciphers used: 1 is use, 0 is don't use, in this order:
+            3DES, CAST5, BLOWFISH, AES256, TWOFISH, CAMELLIA256, pubkey
+            (the last bit is always 0)
+[16 bytes ] Salt for PBKDF2 key derivation
+[until EOF] Ciphertext
+```
