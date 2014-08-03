@@ -1,8 +1,5 @@
 import os, sys, subprocess, inspect, platform, argparse, socket, json
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtWebKit import *
-import webapp
+from PyQt4 import QtCore, QtGui
 
 supercipher_gui_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
@@ -14,58 +11,31 @@ except ImportError:
 
 window_icon = None
 
-class Application(QApplication):
+class Application(QtGui.QApplication):
     def __init__(self):
-        if platform.system() == 'Linux':
-            self.setAttribute(Qt.AA_X11InitThreads, True)
+        self.setAttribute(QtCore.Qt.AA_X11InitThreads, True)
+        QtGui.QApplication.__init__(self, sys.argv)
 
-        QApplication.__init__(self, sys.argv)
-
-class QtStuff(QObject):
-    select_file = pyqtSignal(name='selectFile')
-
+class SuperCipherGui(QtGui.QWidget):
     def __init__(self):
-        QObject.__init__(self)
-        self.webapp = webapp
-        self.select_file.connect(self.select_file_trigger)
+        super(SuperCipherGui, self).__init__()
+        self.init_ui()
 
-    def select_file_trigger(self):
-        filename = QFileDialog.getOpenFileName(caption='Select file', options=QFileDialog.ReadOnly)
-        if not filename:
-            webapp.qtstuff_return = json.dumps({ 'error': True, 'error_type': 'canceled' })
+    def init_ui(self):
+        self.setWindowTitle('SuperCipher')
 
-        filename = str(filename)
-        if not os.path.isfile(filename):
-            webapp.qtstuff_return = json.dumps({ 'error': True, 'error_type': 'invalid' })
+        # icon
+        self.window_icon = QtGui.QIcon("{0}/icon.png".format(supercipher_gui_dir))
+        self.setWindowIcon(self.window_icon)
 
-        filename = os.path.abspath(filename)
-        basename = os.path.basename(filename)
-        webapp.qtstuff_return = json.dumps({ 'error': False, 'filename': filename, 'basename': basename })
+        # label
+        label = QtGui.QLabel('The GUI is not finished yet')
 
-class WebAppThread(QThread):
-    def __init__(self, webapp_port):
-        QThread.__init__(self)
-        self.webapp_port = webapp_port
-
-    def run(self):
-        webapp.app.run(port=self.webapp_port)
-
-class Window(QWebView):
-    def __init__(self, webapp_port):
-        global window_icon
-        QWebView.__init__(self)
-        self.setWindowTitle("SuperCipher")
-        self.resize(400, 300)
-        self.setWindowIcon(window_icon)
-        self.load(QUrl("http://127.0.0.1:{0}".format(webapp_port)))
-
-def choose_port():
-    # let the OS choose a port
-    tmpsock = socket.socket()
-    tmpsock.bind(("127.0.0.1", 0))
-    port = tmpsock.getsockname()[1]
-    tmpsock.close()
-    return port
+        # main layout
+        self.layout = QtGui.QHBoxLayout()
+        self.layout.addWidget(label)
+        self.setLayout(self.layout)
+        self.show()
 
 def main():
     # start the Qt app
@@ -84,34 +54,14 @@ def main():
     is_decrypt = bool(args.decrypt)
     pubkey = args.pubkey
 
-    # create the icon
-    global window_icon, pdfredact_dir
-    window_icon = QIcon("{0}/icon.png".format(supercipher_gui_dir))
-
-    # initialize the web app
-    webapp.window_icon = window_icon
-    webapp.filename = filename
-    webapp.is_decrypt = is_decrypt
-    webapp.pubkey = pubkey
-
-    # QtStuff is to let webapp use Qt objects in the right thread
-    qtstuff = QtStuff()
-    webapp.qtstuff = qtstuff
-
-    # run the web app in a new thread
-    webapp_port = choose_port()
-    webapp_thread = WebAppThread(webapp_port)
-    webapp_thread.start()
-
     # clean up when app quits
     def shutdown():
         # nothing to clean up yet
         pass
-    app.connect(app, SIGNAL("aboutToQuit()"), shutdown)
+    app.connect(app, QtCore.SIGNAL("aboutToQuit()"), shutdown)
 
-    # launch the window
-    web = Window(webapp_port)
-    web.show()
+    # launch the gui
+    gui = SuperCipherGui()
 
     # all done
     sys.exit(app.exec_())
