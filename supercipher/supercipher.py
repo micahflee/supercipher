@@ -1,6 +1,7 @@
 import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, getpass
-from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase 
+from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase
 from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
+from pbkdf2 import PBKDF2
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
@@ -9,10 +10,13 @@ ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
 
 gpg = GnuPG()
 
+def get_random(bits_of_entropy, bytes_returned=64):
+    return hashlib.sha512(os.urandom(bits_of_entropy)).digest()[:bytes_returned]
+
 def get_tmp_dir():
     try:
         while True:
-            random_string = base64.b32encode(os.urandom(4)).lower().replace('=','')
+            random_string = base64.b32encode(get_random(4, 16)).lower().replace('=','')
             tmp_dir = os.path.join('/tmp', 'supercipher_{0}'.format(random_string))
             if not os.path.exists(tmp_dir):
                 os.makedirs(tmp_dir, 0700)
@@ -59,7 +63,7 @@ def stretch_passphrase(passphrase, salt):
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        passphrase = hashlib.pbkdf2_hmac('sha512', passphrase, salt, 200000)
+        passphrase = str(PBKDF2.crypt(passphrase, salt.encode('hex'), 100000))
         passphrase = scrypt.hash(passphrase, salt, N=2**14, r=8, p=1)
         passphrase = base64.b64encode(passphrase)
         passphrases[cipher] = passphrase
@@ -96,7 +100,7 @@ def pubkey_encrypt(filename, pubkey):
 def encrypt(filename, pubkey):
     print 'Encrypting file {0}'.format(filename)
 
-    salt = os.urandom(16)
+    salt = get_random(16, 16)
     tmp_dir = get_tmp_dir()
 
     try:
