@@ -16,9 +16,16 @@ Symmetric encryption is outsourced to GPG, and ciphers used include: 3DES, CAST5
 
 Install dependencies:
 
-'''sh
+```sh
 sudo apt-get install build-essential python-all fakeroot python-stdeb python-flask python-qt4 python-scrypt python-pbkdf2
-'''
+```
+
+Build .deb an install:
+
+```sh
+./build_deb.sh
+sudo dpkg -i deb_dist/supercipher_*.deb
+```
 
 SuperCipher file format:
 
