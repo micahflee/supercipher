@@ -46,14 +46,27 @@ def get_passphrase(ask_twice=False):
 # compress the plaintext file, preserving its filename
 def compress(filenames, archive_filename):
     print 'Compressing'
+
     def reset(tarinfo):
-        tarinfo.name = os.path.basename(tarinfo.name)
+        strip_dir = False
+        absfilename = '/{0}'.format(tarinfo.name)
+        for filename in filenames:
+            if os.path.isdir(filename) and absfilename.startswith(filename):
+                strip_dir = True
+                tarinfo.name = tarinfo.name[len(os.path.dirname(filename)):]
+
+        if not strip_dir:
+            tarinfo.name = os.path.basename(tarinfo.name)
+
+        print 'Adding {0}'.format(tarinfo.name)
+
         tarinfo.uid = tarinfo.gid = 0
         tarinfo.uname = tarinfo.gname = "root"
         return tarinfo
+
     with tarfile.open(archive_filename, 'w:gz') as tar:
         for filename in filenames:
-            tar.add(filename, recursive=False, filter=reset)
+            tar.add(filename, recursive=True, filter=reset)
 
 # stretch passphrase into 6 new passphrases
 def stretch_passphrase(passphrase, salt):
@@ -113,30 +126,28 @@ def encrypt(filenames, output_filename, pubkey):
         current_filename = symmetric_encrypt(archive_filename, passphrases)
         current_filename = pubkey_encrypt(current_filename, pubkey)
 
-        # write the supercipher file
-        supercipher_filename = '{0}.sc'.format(filename)
+        # write the outpu file
         scf = SuperCipherFile(version)
-        scf.save(salt, current_filename, supercipher_filename, bool(pubkey))
-        print 'Superenciphered file: {0}'.format(supercipher_filename)
+        scf.save(salt, current_filename, output_filename, bool(pubkey))
+        print 'Superenciphered file: {0}'.format(output_filename)
     except KeyboardInterrupt:
         print 'Canceling and cleaning up'
 
     # clean up
     destroy_tmp_dir(tmp_dir)
 
-def decrypt(filename, output_filename):
+def decrypt(filename, output_dir):
     print 'Decrypting file {0}'.format(filename)
 
     tmp_dir = get_tmp_dir()
-    plaintext_dir = os.path.dirname(filename)
 
     try:
         scf = SuperCipherFile(version)
         scf.load(filename, tmp_dir)
         passphrase = get_passphrase()
         passphrases = stretch_passphrase(passphrase, scf.salt)
-        plaintext_filename = scf.decrypt(gpg, passphrases, plaintext_dir, ciphers)
-        print 'Decrypted file is: {0}'.format(plaintext_filename)
+        scf.decrypt(gpg, passphrases, output_dir, ciphers)
+        print 'Decrypted to: {0}'.format(output_dir)
 
     except InvalidSuperCipherFile:
         print '{0} does not appear to be a valid SuperCipher file'.format(filename)

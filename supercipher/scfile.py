@@ -98,7 +98,7 @@ class SuperCipherFile(object):
             buf = self.infile.read(1048576)
             outfile.write(buf)
 
-    def decrypt(self, gpg, passphrases, plaintext_dir, ciphers):
+    def decrypt(self, gpg, passphrases, output_dir, ciphers):
         if not self.infile:
             raise DecryptBeforeLoading
 
@@ -125,7 +125,5 @@ class SuperCipherFile(object):
             raise InvalidArchive
         tar = tarfile.open(archive_filename, 'r:gz')
         names = tar.getnames()
-        tar.extractall(plaintext_dir)
-
-        return os.path.join(plaintext_dir, names.pop())
+        tar.extractall(output_dir)
 
