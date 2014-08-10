@@ -44,7 +44,7 @@ def get_passphrase(ask_twice=False):
     return passphrase
 
 # compress the plaintext file, preserving its filename
-def compress(filename, archive_filename):
+def compress(filenames, archive_filename):
     print 'Compressing'
     def reset(tarinfo):
         tarinfo.name = os.path.basename(tarinfo.name)
@@ -52,7 +52,8 @@ def compress(filename, archive_filename):
         tarinfo.uname = tarinfo.gname = "root"
         return tarinfo
     with tarfile.open(archive_filename, 'w:gz') as tar:
-        tar.add(filename, recursive=False, filter=reset)
+        for filename in filenames:
+            tar.add(filename, recursive=False, filter=reset)
 
 # stretch passphrase into 6 new passphrases
 def stretch_passphrase(passphrase, salt):
@@ -97,15 +98,15 @@ def pubkey_encrypt(filename, pubkey):
     return filename
 
 
-def encrypt(filename, pubkey):
-    print 'Encrypting file {0}'.format(filename)
+def encrypt(filenames, output_filename, pubkey):
+    print 'Encrypting files {0}'.format(filenames)
 
     salt = get_random(16, 16)
     tmp_dir = get_tmp_dir()
 
     try:
         archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
-        compress(filename, archive_filename)
+        compress(filenames, archive_filename)
 
         passphrase = get_passphrase(True)
         passphrases = stretch_passphrase(passphrase, salt)
@@ -123,7 +124,7 @@ def encrypt(filename, pubkey):
     # clean up
     destroy_tmp_dir(tmp_dir)
 
-def decrypt(filename):
+def decrypt(filename, output_filename):
     print 'Decrypting file {0}'.format(filename)
 
     tmp_dir = get_tmp_dir()
@@ -156,14 +157,16 @@ def decrypt(filename):
 def main():
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--encrypt', '-e', metavar='filename', nargs='+', help='Files and folders to encrypt')
-    parser.add_argument('--decrypt', '-d', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
-    parser.add_argument('--pubkey', '-p', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
+    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help='Files and folders to encrypt')
+    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
+    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
+    parser.add_argument('-o', '--output', metavar='filename', dest='output', required=True, help='Final encrypted file when encrypting, folder to extract to when decrypting')
     args = parser.parse_args()
 
     encrypt_filenames = args.encrypt
     decrypt_filename = args.decrypt
     pubkey = args.pubkey
+    output_filename = args.output
 
     # convert filenames to absolute paths
     if encrypt_filenames:
@@ -171,6 +174,7 @@ def main():
             encrypt_filenames[i] = os.path.abspath(encrypt_filenames[i])
     if decrypt_filename:
         decrypt_filename = os.path.abspath(decrypt_filename)
+    output_filename = os.path.abspath(output_filename)
 
     # validation
     if not encrypt_filenames and not decrypt_filename:
@@ -214,17 +218,32 @@ def main():
                 print 'You do not have a pubkey with that fingerprint'
                 sys.exit(0)
 
+        # make sure output_filename doesn't already exist
+        if os.path.exists(output_filename):
+            print 'Cannot output to {0}, file already exists'.format(output_filename)
+            sys.exit(0)
+
     elif action == 'decrypt':
         # make sure decrypt_filename is a valid file
         if not os.path.isfile(decrypt_filename):
             print '{0} is not a file'.format(decrypt_filename)
             sys.exit(0)
 
+        # make sure output_filename either doesn't exist or is a writable folder
+        if os.path.exists(output_filename):
+            if os.path.isdir(output_filename):
+                if not os.access(output_filename, os.W_OK):
+                    print 'Cannot output to {0}, folder is not writable'.format(output_filename)
+                    sys.exit(0)
+            else:
+                print 'Cannot output to {0}, file already exists'.format(output_filename)
+                sys.exit(0)
+
     # execute the action
     if action == 'encrypt':
-        encrypt(encrypt_filenames, pubkey)
+        encrypt(encrypt_filenames, output_filename, pubkey)
     else:
-        decrypt(filename)
+        decrypt(decrypt_filename, output_filename)
 
 if __name__ == '__main__':
     main()
