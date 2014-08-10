@@ -156,40 +156,75 @@ def decrypt(filename):
 def main():
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', nargs=1, help='File to encrypt or decrypt')
-    parser.add_argument('--decrypt', action='store_true', dest='decrypt', help='Decrypt a supercipher file')
-    parser.add_argument('--pubkey', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
+    parser.add_argument('--encrypt', '-e', metavar='filename', nargs='+', help='Files and folders to encrypt')
+    parser.add_argument('--decrypt', '-d', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
+    parser.add_argument('--pubkey', '-p', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
     args = parser.parse_args()
 
-    filename = os.path.abspath(args.filename[0])
-    is_decrypt = bool(args.decrypt)
+    encrypt_filenames = args.encrypt
+    decrypt_filename = args.decrypt
     pubkey = args.pubkey
 
+    # convert filenames to absolute paths
+    if encrypt_filenames:
+        for i in range(len(encrypt_filenames)):
+            encrypt_filenames[i] = os.path.abspath(encrypt_filenames[i])
+    if decrypt_filename:
+        decrypt_filename = os.path.abspath(decrypt_filename)
+
     # validation
-    if not filename:
+    if not encrypt_filenames and not decrypt_filename:
         parser.print_help()
+        print ''
+        print 'You must either encrypt or decrypt a file'
         sys.exit(0)
-    if not os.path.isfile(filename):
-        print '{0} is not a file'.format(filename)
+    if encrypt_filenames and decrypt_filename:
+        print 'You cannot encrypt and decrypt files in the same command'
         sys.exit(0)
-    if pubkey:
-        global gpg
-        try:
-            gpg.valid_pubkey(pubkey)
-        except InvalidPubkeyLength:
-            print 'Pubkey fingerprint is invalid, must be 40 characters'
-            sys.exit(0)
-        except InvalidPubkeyNotHex:
-            print 'Pubkey fingerprint is invalid, must be hexadecimal'
-            sys.exit(0)
-        except MissingPubkey:
-            print 'You do not have a pubkey with that fingerprint'
+
+    if encrypt_filenames:
+        action = 'encrypt'
+    else:
+        action = 'decrypt'
+
+    # encrypt validation
+    if action == 'encrypt':
+        # make sure encrypt_filenames is a list of valid files/folders
+        valid = True
+        for filename in encrypt_filenames:
+            if not os.path.exists(filename):
+                print '{0} is not a file or folder'.format(filename)
+                valid = False
+        if not valid:
+            print 'Some of the filenames you want to encrypt are invalid'
             sys.exit(0)
 
-    if is_decrypt:
-        decrypt(filename)
+        # if pubkey is passed, make sure the fingerprint is valid
+        if pubkey:
+            global gpg
+            try:
+                gpg.valid_pubkey(pubkey)
+            except InvalidPubkeyLength:
+                print 'Pubkey fingerprint is invalid, must be 40 characters'
+                sys.exit(0)
+            except InvalidPubkeyNotHex:
+                print 'Pubkey fingerprint is invalid, must be hexadecimal'
+                sys.exit(0)
+            except MissingPubkey:
+                print 'You do not have a pubkey with that fingerprint'
+                sys.exit(0)
+
+    elif action == 'decrypt':
+        # make sure decrypt_filename is a valid file
+        if not os.path.isfile(decrypt_filename):
+            print '{0} is not a file'.format(decrypt_filename)
+            sys.exit(0)
+
+    # execute the action
+    if action == 'encrypt':
+        encrypt(encrypt_filenames, pubkey)
     else:
-        encrypt(filename, pubkey)
+        decrypt(filename)
 
 if __name__ == '__main__':
     main()
