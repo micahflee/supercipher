@@ -27,7 +27,14 @@ Build .deb an install:
 sudo dpkg -i deb_dist/supercipher_*.deb
 ```
 
-SuperCipher file format:
+Run tests:
+
+```sh
+sudo apt-get install nosetests
+nosetests
+```
+
+## SuperCipher file format:
 
 ```
 [4 bytes  ] Magic number 0xEBA34B1C
