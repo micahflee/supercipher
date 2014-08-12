@@ -8,8 +8,11 @@ class InvalidDecryptionPassphrase(Exception): pass
 
 class GnuPG(object):
 
-    def __init__(self):
-        self.gpg_bin = '/usr/bin/gpg'
+    def __init__(self, homedir=None):
+        self.gpg_command = ['/usr/bin/gpg', '--batch', '--no-tty']
+        if homedir:
+            self.gpg_command.append('--homedir')
+            self.gpg_command.append(str(homedir))
 
     def valid_pubkey(self, pubkey):
         if len(pubkey) != 40:
@@ -22,31 +25,31 @@ class GnuPG(object):
 
         try:
             devnull = open('/dev/null', 'w')
-            subprocess.check_call([self.gpg_bin, '--batch', '--no-tty', '--with-colons', '--list-keys', pubkey], stdin=devnull, stdout=devnull, stderr=devnull)
+            subprocess.check_call(self.gpg_command + ['--with-colons', '--list-keys', pubkey], stdin=devnull, stdout=devnull, stderr=devnull)
         except subprocess.CalledProcessError:
             raise MissingPubkey
 
-        return True 
+        return True
 
     def symmetric_encrypt(self, cipher, passphrase, filename):
-        p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         p.communicate(passphrase)
         p.wait()
 
     def symmetric_decrypt(self, filename, passphrase):
         output_filename = os.path.splitext(filename)[0]
-        p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--output', output_filename, '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--output', output_filename, '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         p.communicate(passphrase)
         returncode = p.wait()
         if returncode != 0:
             raise InvalidDecryptionPassphrase
 
     def pubkey_encrypt(self, filename, pubkey):
-        subprocess.check_call([self.gpg_bin, '--batch', '--no-tty', '--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
+        subprocess.check_call(self.gpg_command + ['--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
 
     def pubkey_decrypt(self, filename):
         output_filename = os.path.splitext(filename)[0]
-        p = subprocess.Popen([self.gpg_bin, '--batch', '--no-tty', '--use-agent', '--output', output_filename, '--decrypt', filename], stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--use-agent', '--output', output_filename, '--decrypt', filename], stdout=subprocess.PIPE)
         returncode = p.wait()
         if returncode != 0:
             raise MissingSeckey
