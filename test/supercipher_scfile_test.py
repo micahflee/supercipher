@@ -76,8 +76,19 @@ def test_scfile_decrypt_before_loading():
     else:
         assert False
 
+@with_setup(setup, teardown)
 def test_scfile_decrypt_invalid_archive():
     "the .tar.gz inside a SuperCipher file must be a valid one"
+    global tmp_dir
+    scf = SuperCipherFile(supercipher.version)
+    try:
+        scf.load(os.path.abspath('test/data/fake_bad_archive.sc'), tmp_dir)
+        passphrases = supercipher.stretch_passphrase('test', scf.salt)
+        scf.decrypt(supercipher.gpg, passphrases, output_dir, supercipher.ciphers)
+    except InvalidArchive:
+        assert True
+    else:
+        assert False
 
 def test_scfile_decrypt():
     "should be able to decrypt a valid SuperCipher file"
