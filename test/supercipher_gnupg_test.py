@@ -57,6 +57,26 @@ def test_gnupg_valid_pubkey_missing():
         assert False
 
 @with_setup(setup_clean_crypto_files)
+def test_gnupg_symmetric_decrypt_bad_passphrase():
+    passphrase = helper_random_string(128)
+    plaintext = helper_random_string(256)
+    
+    # make file with random data
+    open(plaintext_path, 'w').write(plaintext)
+
+    # encrypt
+    gpg.symmetric_encrypt('aes256', passphrase, plaintext_path)
+    helper_delete_file(plaintext_path)
+
+    # decrypt
+    try:
+        gpg.symmetric_decrypt(ciphertext_path, 'wrong passphrase')
+    except InvalidDecryptionPassphrase:
+        assert True
+    else:
+        assert False
+
+@with_setup(setup_clean_crypto_files)
 def test_gnupg_symmetric_encryption():
     "should be able to encrypt with GnuPG.symmetric_encrypt and a passphrase, and decrypt with GnuPGP.symmetric_decrypt and same passphrase"
     passphrase = helper_random_string(128)
