@@ -6,7 +6,7 @@ class InvalidArchive(Exception): pass
 class DecryptBeforeLoading(Exception): pass
 
 class SuperCipherFile(object):
-    def __init__(self, version): 
+    def __init__(self, version):
         self.MAGIC_NUMBER = '\xEB\xA3\x4B\x1C'
         self.CIPHERS = {
             '3des':        0b10000000,
