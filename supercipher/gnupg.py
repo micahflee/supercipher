@@ -51,7 +51,7 @@ class GnuPG(object):
 
     def pubkey_decrypt(self, filename):
         output_filename = os.path.splitext(filename)[0]
-        p = subprocess.Popen(self.gpg_command + ['--use-agent', '--output', output_filename, '--decrypt', filename], stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--use-agent', '--output', output_filename, '--decrypt', filename], stdout=subprocess.PIPE, stdin=self.devnull, stderr=self.devnull)
         returncode = p.wait()
         if returncode != 0:
             raise MissingSeckey
