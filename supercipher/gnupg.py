@@ -14,6 +14,9 @@ class GnuPG(object):
             self.gpg_command.append('--homedir')
             self.gpg_command.append(str(homedir))
 
+        # for suppressing output
+        self.devnull = open('/dev/null', 'w')
+
     def valid_pubkey(self, pubkey):
         if len(pubkey) != 40:
             raise InvalidPubkeyLength
@@ -24,21 +27,20 @@ class GnuPG(object):
             raise InvalidPubkeyNotHex
 
         try:
-            devnull = open('/dev/null', 'w')
-            subprocess.check_call(self.gpg_command + ['--with-colons', '--list-keys', pubkey], stdin=devnull, stdout=devnull, stderr=devnull)
+            subprocess.check_call(self.gpg_command + ['--with-colons', '--list-keys', pubkey], stdin=self.devnull, stdout=self.devnull, stderr=self.devnull)
         except subprocess.CalledProcessError:
             raise MissingPubkey
 
         return True
 
     def symmetric_encrypt(self, cipher, passphrase, filename):
-        p = subprocess.Popen(self.gpg_command + ['--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.devnull)
         p.communicate(passphrase)
         p.wait()
 
     def symmetric_decrypt(self, filename, passphrase):
         output_filename = os.path.splitext(filename)[0]
-        p = subprocess.Popen(self.gpg_command + ['--output', output_filename, '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(self.gpg_command + ['--output', output_filename, '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.devnull)
         p.communicate(passphrase)
         returncode = p.wait()
         if returncode != 0:
