@@ -15,3 +15,27 @@ def test_scfile_bytes_to_version():
     assert scf.bytes_to_version('\x00\x00\x03') == '0.0.3'
     assert scf.bytes_to_version('\xff\xff\xff') == '255.255.255'
 
+def test_scfile_load_small_file():
+    "SuperCipher files should all be at least 24 bytes"
+
+def test_scfile_load_wrong_magic_number():
+    "SuperCipher files should begin with the magic number 0xEBA34B1C"
+
+def test_scfile_load_future_version():
+    "should throw error if loading a SuperCipher file from a future version"
+
+def test_scfile_decrypt_before_loading():
+    "you must run SuperCipherFile.load before .decrypt"
+
+def test_scfile_decrypt_invalid_archive():
+    "the .tar.gz inside a SuperCipher file must be a valid one"
+
+def test_scfile_encryption():
+    "should be able to encrypt/decrypt successfully"
+
+def test_scfile_encryption_pubkey():
+    "should be able to encrypt/decrypt successfully with a valid pubkey and seckey"
+
+def test_scfile_encryption_pubkey_missing_seckey():
+    "should fail when trying to encrypt/decrypt with a valid pubkey but no seckey"
+
