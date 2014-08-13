@@ -59,7 +59,6 @@ def test_gnupg_valid_pubkey_missing():
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_symmetric_encryption():
     "should be able to encrypt with GnuPG.symmetric_encrypt and a passphrase, and decrypt with GnuPGP.symmetric_decrypt and same passphrase"
-    
     passphrase = helper_random_string(128)
     plaintext = helper_random_string(256)
     
@@ -78,5 +77,42 @@ def test_gnupg_symmetric_encryption():
 
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_pubkey_encryption():
-    "should be able to encrypt with GnuPG.pubkey_encrypt, and decrypt withe GnuPGP.pubkey_decrypt"
-    pass
+    "should be able to encrypt with GnuPG.pubkey_encrypt, and decrypt with GnuPGP.pubkey_decrypt with valid pubkey and seckey"
+    passphrase = helper_random_string(128)
+    plaintext = helper_random_string(256)
+    
+    # make file with random data
+    open(plaintext_path, 'w').write(plaintext)
+
+    # encrypt
+    gpg.pubkey_encrypt(plaintext_path, '6F6467FDF4462C38FE597CD0CA6C5413CF7BCA9E')
+    helper_delete_file(plaintext_path)
+
+    # decrypt
+    gpg.pubkey_decrypt(ciphertext_path)
+    new_plaintext = open(plaintext_path, 'r').read()
+
+    assert plaintext == new_plaintext
+
+@with_setup(setup_clean_crypto_files)
+def test_gnupg_pubkey_encryption_missing_seckey():
+    "when encrypting with GnuPG.pubkey_encrypt, should fail to decrypt with GnuPGP.pubkey_decrypt if seckey is missing"
+    passphrase = helper_random_string(128)
+    plaintext = helper_random_string(256)
+    
+    # make file with random data
+    open(plaintext_path, 'w').write(plaintext)
+
+    # encrypt
+    gpg.pubkey_encrypt(plaintext_path, '77D4E195BE81A10047B06E4747AA62EF2712261B')
+    helper_delete_file(plaintext_path)
+
+    # decrypt
+    try:
+        gpg.pubkey_decrypt(ciphertext_path)
+        new_plaintext = open(plaintext_path, 'r').read()
+    except MissingSeckey:
+        assert True
+    else:
+        assert False
+
