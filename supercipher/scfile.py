@@ -1,4 +1,5 @@
 import os, tarfile
+import strings
 
 class InvalidSuperCipherFile(Exception): pass
 class FutureFileVersion(Exception): pass
@@ -91,7 +92,7 @@ class SuperCipherFile(object):
             self.ciphertext_filename += '.gpg'
 
         # write ciphertext file
-        print 'Writing ciphertext file to disk'
+        print strings._('scfile_writing_ciphertext')
         outfile = open(self.ciphertext_filename, 'wb')
         buf = None
         while buf != '':
@@ -104,7 +105,7 @@ class SuperCipherFile(object):
 
         # if there's a pubkey wrapper, decrypt that first 
         if bool(ord(self.ciphers) & self.CIPHERS['pubkey']):
-            print 'Decrypting pubkey layer'
+            print strings._('scfile_decrypting_pubkey')
             gpg.pubkey_decrypt(self.ciphertext_filename)
             self.ciphertext_filename_delete_and_truncate()
 
@@ -114,12 +115,12 @@ class SuperCipherFile(object):
 
         # decrypt all the layers of symmetric encryption
         for cipher in reversed_ciphers:
-            print 'Decrypting symmetric layer with cipher {0}'.format(cipher)
+            print strings._('scfile_decrypting_symmetric').format(cipher)
             gpg.symmetric_decrypt(self.ciphertext_filename, passphrases[cipher])
             self.ciphertext_filename_delete_and_truncate()
 
         # extract
-        print 'Extracting'
+        print strings._('scfile_extracting')
         archive_filename = self.ciphertext_filename
         if not tarfile.is_tarfile(archive_filename):
             raise InvalidArchive

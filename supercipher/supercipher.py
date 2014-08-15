@@ -2,6 +2,7 @@ import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, get
 from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase
 from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
 from pbkdf2 import PBKDF2
+import strings
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
@@ -22,7 +23,7 @@ def get_tmp_dir():
                 os.makedirs(tmp_dir, 0700)
                 return tmp_dir
     except:
-        print "Cannot create directory {0}".format(tmp_dir)
+        print strings._('mkdir_error').format(tmp_dir)
         return False
 
 def destroy_tmp_dir(tmp_dir):
@@ -32,20 +33,20 @@ def get_passphrase(ask_twice=False):
     if ask_twice:
         valid_passphrase = False
         while not valid_passphrase:
-            passphrase = getpass.getpass('Enter passphrase: ')
-            passphrase2 = getpass.getpass('Retype passphrase: ')
+            passphrase = getpass.getpass(strings._('get_passphrase'))
+            passphrase2 = getpass.getpass(strings._('get_passphrase2'))
             if passphrase == passphrase2:
                 valid_passphrase = True
             else:
-                print 'Passwords do not match. Try again:'
+                print strings._('passphrase_mismatch')
     else:
-        passphrase = getpass.getpass('Enter passphrase: ')
+        passphrase = getpass.getpass(strings._('get_passphrase'))
 
     return passphrase
 
 # compress the plaintext file, preserving its filename
 def compress(filenames, archive_filename):
-    print 'Compressing'
+    print strings._('compressing')
 
     def reset(tarinfo):
         strip_dir = False
@@ -58,7 +59,7 @@ def compress(filenames, archive_filename):
         if not strip_dir:
             tarinfo.name = os.path.basename(tarinfo.name)
 
-        print 'Adding {0}'.format(tarinfo.name)
+        print strings._('adding').format(tarinfo.name)
 
         tarinfo.uid = tarinfo.gid = 0
         tarinfo.uname = tarinfo.gname = "root"
@@ -72,7 +73,7 @@ def compress(filenames, archive_filename):
 def stretch_passphrase(passphrase, salt):
     global ciphers
     passphrases = {}
-    sys.stdout.write('Deriving passphrases for each cipher:')
+    sys.stdout.write(strings._('deriving_passphrases'))
     sys.stdout.flush()
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
@@ -89,7 +90,7 @@ def stretch_passphrase(passphrase, salt):
 def symmetric_encrypt(archive_filename, passphrases):
     global gpg, ciphers
     current_filename = archive_filename
-    sys.stdout.write('Encrypting with each cipher:')
+    sys.stdout.write(strings._('encrypt_encrypting_cipher'))
     sys.stdout.flush()
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
@@ -112,7 +113,7 @@ def pubkey_encrypt(filename, pubkey):
 
 
 def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
-    print 'Encrypting files {0}'.format(filenames)
+    print strings._('encrypt_encrypting_files').format(filenames)
 
     salt = get_random(16, 16)
     tmp_dir = get_tmp_dir()
@@ -130,15 +131,15 @@ def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
         # write the output file
         scf = SuperCipherFile(version)
         scf.save(salt, current_filename, output_filename, bool(pubkey))
-        print 'Superenciphered file: {0}'.format(output_filename)
+        print strings._('encrypt_encrypted_to').format(output_filename)
     except KeyboardInterrupt:
-        print 'Canceling and cleaning up'
+        print strings._('cleanup')
 
     # clean up
     destroy_tmp_dir(tmp_dir)
 
 def decrypt(filename, output_dir, passphrase=None):
-    print 'Decrypting file {0}'.format(filename)
+    print strings._('decrypt_decrypting_file').format(filename)
 
     tmp_dir = get_tmp_dir()
 
@@ -149,31 +150,33 @@ def decrypt(filename, output_dir, passphrase=None):
             passphrase = get_passphrase()
         passphrases = stretch_passphrase(passphrase, scf.salt)
         scf.decrypt(gpg, passphrases, output_dir, ciphers)
-        print 'Decrypted to: {0}'.format(output_dir)
+        print strings._('decrypt_decrypted_to').format(output_dir)
 
     except InvalidSuperCipherFile:
-        print '{0} does not appear to be a valid SuperCipher file'.format(filename)
+        print strings._('decrypt_error_invalid_file').format(filename)
     except FutureFileVersion:
-        print 'This file appears to have been created with a newer version of SuperCipher. Please upgrade and try again.'
+        print strings._('decrypt_error_future_version')
     except InvalidArchive:
-        print 'Something went wrong during the decryption.'
+        print strings._('decrypt_error_invalid_archive')
     except MissingSeckey:
-        print 'Cannot decrypt SuperCipher file, you do not have the right secret key.'
+        print strings._('decrypt_error_missing_seckey')
     except InvalidDecryptionPassphrase:
-        print 'Invalid passphrase.'
+        print strings._('decrypt_error_invalid_passphrase')
     except KeyboardInterrupt:
-        print 'Canceling and cleaning up'
+        print strings._('cleanup')
 
     # clean up
     destroy_tmp_dir(tmp_dir)
 
 def main():
+    strings.load_strings(supercipher_dir)
+
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help='Files and folders to encrypt')
-    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
-    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
-    parser.add_argument('-o', '--output', metavar='filename', dest='output', required=True, help='Final encrypted file when encrypting, folder to extract to when decrypting')
+    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help=strings._('arg_help_encrypt'))
+    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help=strings._('arg_help_decrypt'))
+    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help=strings._('arg_help_pubkey'))
+    parser.add_argument('-o', '--output', metavar='filename', dest='output', required=True, help=strings._('arg_help_output'))
     args = parser.parse_args()
 
     encrypt_filenames = args.encrypt
@@ -193,10 +196,10 @@ def main():
     if not encrypt_filenames and not decrypt_filename:
         parser.print_help()
         print ''
-        print 'You must either encrypt or decrypt a file'
+        print strings._('validation_choose_one')
         sys.exit(0)
     if encrypt_filenames and decrypt_filename:
-        print 'You cannot encrypt and decrypt files in the same command'
+        print strings._('validation_dont_choose_two')
         sys.exit(0)
 
     if encrypt_filenames:
@@ -210,10 +213,10 @@ def main():
         valid = True
         for filename in encrypt_filenames:
             if not os.path.exists(filename):
-                print '{0} is not a file or folder'.format(filename)
+                print strings._('validation_doesnt_exist').format(filename)
                 valid = False
         if not valid:
-            print 'Some of the filenames you want to encrypt are invalid'
+            print strings._('validation_invalid_file')
             sys.exit(0)
 
         # if pubkey is passed, make sure the fingerprint is valid
@@ -222,34 +225,34 @@ def main():
             try:
                 gpg.valid_pubkey(pubkey)
             except InvalidPubkeyLength:
-                print 'Pubkey fingerprint is invalid, must be 40 characters'
+                print strings._('validation_pubkey_length')
                 sys.exit(0)
             except InvalidPubkeyNotHex:
-                print 'Pubkey fingerprint is invalid, must be hexadecimal'
+                print strings._('validation_pubkey_not_hex')
                 sys.exit(0)
             except MissingPubkey:
-                print 'You do not have a pubkey with that fingerprint'
+                print strings._('validation_missing_pubkey')
                 sys.exit(0)
 
         # make sure output_filename doesn't already exist
         if os.path.exists(output_filename):
-            print 'Cannot output to {0}, file already exists'.format(output_filename)
+            print strings._('validation_output_exists').format(output_filename)
             sys.exit(0)
 
     elif action == 'decrypt':
         # make sure decrypt_filename is a valid file
         if not os.path.isfile(decrypt_filename):
-            print '{0} is not a file'.format(decrypt_filename)
+            print strings._('validation_not_file').format(decrypt_filename)
             sys.exit(0)
 
         # make sure output_filename either doesn't exist or is a writable folder
         if os.path.exists(output_filename):
             if os.path.isdir(output_filename):
                 if not os.access(output_filename, os.W_OK):
-                    print 'Cannot output to {0}, folder is not writable'.format(output_filename)
+                    print strings._('validation_not_writable').format(output_filename)
                     sys.exit(0)
             else:
-                print 'Cannot output to {0}, file already exists'.format(output_filename)
+                print strings._('validation_already_exists').format(output_filename)
                 sys.exit(0)
 
     # execute the action
