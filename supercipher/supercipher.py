@@ -111,7 +111,7 @@ def pubkey_encrypt(filename, pubkey):
     return filename
 
 
-def encrypt(filenames, output_filename, pubkey):
+def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
     print 'Encrypting files {0}'.format(filenames)
 
     salt = get_random(16, 16)
@@ -121,7 +121,8 @@ def encrypt(filenames, output_filename, pubkey):
         archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
         compress(filenames, archive_filename)
 
-        passphrase = get_passphrase(True)
+        if not passphrase:
+            passphrase = get_passphrase(True)
         passphrases = stretch_passphrase(passphrase, salt)
         current_filename = symmetric_encrypt(archive_filename, passphrases)
         current_filename = pubkey_encrypt(current_filename, pubkey)
@@ -136,7 +137,7 @@ def encrypt(filenames, output_filename, pubkey):
     # clean up
     destroy_tmp_dir(tmp_dir)
 
-def decrypt(filename, output_dir):
+def decrypt(filename, output_dir, passphrase=None):
     print 'Decrypting file {0}'.format(filename)
 
     tmp_dir = get_tmp_dir()
@@ -144,7 +145,8 @@ def decrypt(filename, output_dir):
     try:
         scf = SuperCipherFile(version)
         scf.load(filename, tmp_dir)
-        passphrase = get_passphrase()
+        if not passphrase:
+            passphrase = get_passphrase()
         passphrases = stretch_passphrase(passphrase, scf.salt)
         scf.decrypt(gpg, passphrases, output_dir, ciphers)
         print 'Decrypted to: {0}'.format(output_dir)
