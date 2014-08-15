@@ -126,7 +126,7 @@ def encrypt(filenames, output_filename, pubkey):
         current_filename = symmetric_encrypt(archive_filename, passphrases)
         current_filename = pubkey_encrypt(current_filename, pubkey)
 
-        # write the outpu file
+        # write the output file
         scf = SuperCipherFile(version)
         scf.save(salt, current_filename, output_filename, bool(pubkey))
         print 'Superenciphered file: {0}'.format(output_filename)
