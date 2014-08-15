@@ -6,7 +6,6 @@ class FileList(QtGui.QListWidget):
     files_dropped = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
-        print '__init__'
         super(FileList, self).__init__(parent)
         self.setAcceptDrops(True)
         self.setIconSize(QtCore.QSize(32, 32))
@@ -21,7 +20,6 @@ class FileList(QtGui.QListWidget):
         self.update()
 
     def update(self):
-        print 'update'
         # file list should have a background image if empty
         if len(self.filenames) == 0:
             self.drop_label.show()
@@ -32,14 +30,12 @@ class FileList(QtGui.QListWidget):
         self.drop_label.setGeometry(0, 0, self.width(), self.height())
 
     def dragEnterEvent(self, event):
-        print 'dragEnterEvent'
         if event.mimeData().hasUrls:
             event.accept()
         else:
             event.ignore()
 
     def dragMoveEvent(self, event):
-        print 'dragMoveEvent'
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
@@ -47,7 +43,6 @@ class FileList(QtGui.QListWidget):
             event.ignore()
 
     def dropEvent(self, event):
-        print 'dropEvent'
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
@@ -59,7 +54,6 @@ class FileList(QtGui.QListWidget):
         self.files_dropped.emit()
 
     def add_file(self, filename):
-        print 'add_file'
         if filename not in self.filenames:
             self.filenames.append(filename)
 
