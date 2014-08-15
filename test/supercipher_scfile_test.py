@@ -1,13 +1,15 @@
-import shutil, supercipher
+import shutil, supercipher, helper
 from nose import with_setup
 from supercipher.scfile import *
 
 output_dir = os.path.abspath('test/data/output_dir')
+output_file = os.path.abspath('test/data/output_file')
 
 def setup():
     "make a new tmp_dir"
     global tmp_dir
     tmp_dir = supercipher.get_tmp_dir()
+    helper.delete_file(output_file)
 
 def teardown():
     "destroy the existing tmp_dir"
@@ -102,14 +104,19 @@ def test_scfile_decrypt():
     assert plaintext == 'sample data\n'
 
 @with_setup(setup, teardown)
-def test_scfile_encryption():
-    "should be able to encrypt/decrypt successfully"
+def test_scfile_save_load():
+    "should be able to save a SuperCipher file and reload it successfully"
+    global tmp_dir
+    salt = supercipher.get_random(16, 16)
+    archive_filename = os.path.abspath('test/data/archive.tar.gz')
 
-@with_setup(setup, teardown)
-def test_scfile_encryption_pubkey():
-    "should be able to encrypt/decrypt successfully with a valid pubkey and seckey"
+    # save
+    scf = SuperCipherFile(supercipher.version)
+    scf.save(salt, archive_filename, output_file, False)
+    assert os.path.exists(output_file)
 
-@with_setup(setup, teardown)
-def test_scfile_encryption_pubkey_missing_seckey():
-    "should fail when trying to encrypt/decrypt with a valid pubkey but no seckey"
+    # load
+    scf = SuperCipherFile(supercipher.version)
+    scf.load(output_file, tmp_dir)
+    assert scf.salt == salt
 
