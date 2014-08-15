@@ -47,7 +47,10 @@ class GnuPG(object):
             raise InvalidDecryptionPassphrase
 
     def pubkey_encrypt(self, filename, pubkey):
-        subprocess.check_call(self.gpg_command + ['--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
+        try:
+            subprocess.check_call(self.gpg_command + ['--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
+        except subprocess.CalledProcessError:
+            raise MissingPubkey
 
     def pubkey_decrypt(self, filename):
         output_filename = os.path.splitext(filename)[0]
