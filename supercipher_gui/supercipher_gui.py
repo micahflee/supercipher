@@ -19,9 +19,8 @@ class Application(QtGui.QApplication):
 class SuperCipherGui(QtGui.QWidget):
     def __init__(self):
         super(SuperCipherGui, self).__init__()
-        self.init_ui()
 
-    def init_ui(self):
+    def init_encrypt_ui(self):
         self.setWindowTitle('SuperCipher')
 
         # icon
@@ -37,22 +36,17 @@ class SuperCipherGui(QtGui.QWidget):
         self.setLayout(self.layout)
         self.show()
 
+    def alert(self, msg, icon=QtGui.QMessageBox.NoIcon):
+        dialog = QtGui.QMessageBox()
+        dialog.setWindowTitle("SuperCipher")
+        dialog.setWindowIcon(self.window_icon)
+        dialog.setText(msg)
+        dialog.setIcon(icon)
+        dialog.exec_()
+
 def main():
     # start the Qt app
     app = Application()
-
-    # parse arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', nargs='?', help='File to encrypt or decrypt')
-    parser.add_argument('--decrypt', action='store_true', dest='decrypt', help='Decrypt a supercipher file')
-    parser.add_argument('--pubkey', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
-    args = parser.parse_args()
-
-    filename = args.filename
-    if filename:
-        filename = os.path.abspath(filename[0])
-    is_decrypt = bool(args.decrypt)
-    pubkey = args.pubkey
 
     # clean up when app quits
     def shutdown():
@@ -62,6 +56,27 @@ def main():
 
     # launch the gui
     gui = SuperCipherGui()
+
+    # parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help='Files and folders to encrypt')
+    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
+    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
+    args = parser.parse_args()
+
+    encrypt_filenames = args.encrypt
+    decrypt_filename = args.decrypt
+    pubkey = args.pubkey
+
+    # convert filenames to absolute paths
+    if encrypt_filenames:
+        for i in range(len(encrypt_filenames)):
+            encrypt_filenames[i] = os.path.abspath(encrypt_filenames[i])
+    if decrypt_filename:
+        decrypt_filename = os.path.abspath(decrypt_filename)
+
+    # display encrypt window
+    gui.init_encrypt_ui()
 
     # all done
     sys.exit(app.exec_())
