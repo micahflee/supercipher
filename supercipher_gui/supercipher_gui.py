@@ -1,6 +1,7 @@
 import os, sys, subprocess, inspect, platform, argparse, socket, json
 from PyQt4 import QtCore, QtGui
 from file_selection import FileSelection
+from passphrases import Passphrases
 import common
 
 try:
@@ -31,9 +32,13 @@ class SuperCipherGui(QtGui.QWidget):
             for filename in encrypt_filenames:
                 file_selection.file_list.add_file(filename)
 
+        # passphrases
+        passphrases = Passphrases()
+
         # main layout
-        self.layout = QtGui.QHBoxLayout()
+        self.layout = QtGui.QVBoxLayout()
         self.layout.addLayout(file_selection)
+        self.layout.addLayout(passphrases)
         self.setLayout(self.layout)
         self.show()
 

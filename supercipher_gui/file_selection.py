@@ -1,4 +1,4 @@
-import os, inspect, platform
+import os
 from PyQt4 import QtCore, QtGui
 import common
 
