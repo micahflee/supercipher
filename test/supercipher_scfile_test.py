@@ -78,7 +78,7 @@ def test_scfile_decrypt_before_loading():
 
 @with_setup(setup, teardown)
 def test_scfile_decrypt_invalid_archive():
-    "the .tar.gz inside a SuperCipher file must be a valid one"
+    "should fail when trying to decrypt a SuperCipher file with an invalid .tar.gz inside"
     global tmp_dir
     scf = SuperCipherFile(supercipher.version)
     try:
@@ -90,15 +90,26 @@ def test_scfile_decrypt_invalid_archive():
     else:
         assert False
 
+@with_setup(setup, teardown)
 def test_scfile_decrypt():
     "should be able to decrypt a valid SuperCipher file"
+    global tmp_dir
+    scf = SuperCipherFile(supercipher.version)
+    scf.load(os.path.abspath('test/data/real1.sc'), tmp_dir)
+    passphrases = supercipher.stretch_passphrase('test', scf.salt)
+    scf.decrypt(supercipher.gpg, passphrases, output_dir, supercipher.ciphers)
+    plaintext = open('{0}/plaintext.txt'.format(output_dir)).read()
+    assert plaintext == 'sample data\n'
 
+@with_setup(setup, teardown)
 def test_scfile_encryption():
     "should be able to encrypt/decrypt successfully"
 
+@with_setup(setup, teardown)
 def test_scfile_encryption_pubkey():
     "should be able to encrypt/decrypt successfully with a valid pubkey and seckey"
 
+@with_setup(setup, teardown)
 def test_scfile_encryption_pubkey_missing_seckey():
     "should fail when trying to encrypt/decrypt with a valid pubkey but no seckey"
 
