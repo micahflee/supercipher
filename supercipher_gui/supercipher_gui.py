@@ -8,8 +8,7 @@ try:
 except ImportError:
     sys.path.append(os.path.abspath(common.supercipher_gui_dir+"/.."))
     import supercipher
-
-window_icon = None
+from supercipher import strings
 
 class Application(QtGui.QApplication):
     def __init__(self):
@@ -19,16 +18,16 @@ class Application(QtGui.QApplication):
 class SuperCipherGui(QtGui.QWidget):
     def __init__(self):
         super(SuperCipherGui, self).__init__()
-
-    def init_encrypt_ui(self):
         self.setWindowTitle('SuperCipher')
 
         # icon
         self.window_icon = QtGui.QIcon("{0}/icon.png".format(common.supercipher_gui_dir))
         self.setWindowIcon(self.window_icon)
 
+    def start_encrypt(self, encrypt_filenames=None, pubkey=None):
         # file selection
         file_selection = FileSelection()
+        # todo: add encrypt_filenames to file_selection
 
         # main layout
         self.layout = QtGui.QHBoxLayout()
@@ -36,7 +35,17 @@ class SuperCipherGui(QtGui.QWidget):
         self.setLayout(self.layout)
         self.show()
 
-    def alert(self, msg, icon=QtGui.QMessageBox.NoIcon):
+    def start_decrypt(self, decrypt_filename):
+        # label
+        label = QtGui.QLabel("Decrypt is not implemented yet")
+
+        # main layout
+        self.layout = QtGui.QHBoxLayout()
+        self.layout.addWidget(label)
+        self.setLayout(self.layout)
+        self.show()
+
+    def alert(self, msg, icon=QtGui.QMessageBox.Warning):
         dialog = QtGui.QMessageBox()
         dialog.setWindowTitle("SuperCipher")
         dialog.setWindowIcon(self.window_icon)
@@ -45,6 +54,8 @@ class SuperCipherGui(QtGui.QWidget):
         dialog.exec_()
 
 def main():
+    strings.load_strings(supercipher.supercipher_dir)
+
     # start the Qt app
     app = Application()
 
@@ -59,9 +70,9 @@ def main():
 
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help='Files and folders to encrypt')
-    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help='Filename of supercipher file to decrypt')
-    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help='Fingerprint of gpg public key to encrypt to')
+    parser.add_argument('-e', '--encrypt', metavar='filename', nargs='+', help=strings._('arg_help_encrypt'))
+    parser.add_argument('-d', '--decrypt', metavar='filename', dest='decrypt', help=strings._('arg_help_decrypt'))
+    parser.add_argument('-p', '--pubkey', metavar='public_key', dest='pubkey', help=strings._('arg_help_pubkey'))
     args = parser.parse_args()
 
     encrypt_filenames = args.encrypt
@@ -75,8 +86,56 @@ def main():
     if decrypt_filename:
         decrypt_filename = os.path.abspath(decrypt_filename)
 
-    # display encrypt window
-    gui.init_encrypt_ui()
+    # validation
+    if encrypt_filenames and decrypt_filename:
+        gui.alert(strings._('validation_dont_choose_two'))
+        sys.exit(0)
+
+    action = 'encrypt'
+    if decrypt_filename:
+        action = 'decrypt'
+
+    # encrypt validation
+    if action == 'encrypt':
+        # make sure encrypt_filenames is a list of valid files/folders
+        if encrypt_filenames:
+            valid = True
+            error_msg = ''
+            for filename in encrypt_filenames:
+                if not os.path.exists(filename):
+                    error_msg += strings._('validation_doesnt_exist').format(filename) + '\n\n'
+                    valid = False
+            if not valid:
+                error_msg += strings._('validation_invalid_file')
+                gui.alert(error_msg)
+                sys.exit(0)
+
+        # if pubkey is passed, make sure the fingerprint is valid
+        if pubkey:
+            try:
+                supercipher.gpg.valid_pubkey(pubkey)
+            except InvalidPubkeyLength:
+                gui.alert(strings._('validation_pubkey_length'))
+                sys.exit(0)
+            except InvalidPubkeyNotHex:
+                gui.alert(strings._('validation_pubkey_not_hex'))
+                sys.exit(0)
+            except MissingPubkey:
+                gui.alert(strings._('validation_missing_pubkey'))
+                sys.exit(0)
+
+    elif action == 'decrypt':
+        # make sure decrypt_filename is a valid file
+        if decrypt_filename:
+            if not os.path.isfile(decrypt_filename):
+                gui.alert(strings._('validation_not_file').format(decrypt_filename))
+                sys.exit(0)
+    
+    # execute the action
+    if action == 'encrypt':
+        gui.start_encrypt(encrypt_filenames, pubkey)
+    else:
+        gui.start_decrypt(decrypt_filename)
 
     # all done
     sys.exit(app.exec_())
