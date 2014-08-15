@@ -18,7 +18,7 @@ class Application(QtGui.QApplication):
 class SuperCipherGui(QtGui.QWidget):
     def __init__(self):
         super(SuperCipherGui, self).__init__()
-        self.setWindowTitle('SuperCipher')
+        self.setWindowTitle(strings._('supercipher'))
 
         # icon
         self.window_icon = QtGui.QIcon("{0}/icon.png".format(common.supercipher_gui_dir))
@@ -49,7 +49,7 @@ class SuperCipherGui(QtGui.QWidget):
 
     def alert(self, msg, icon=QtGui.QMessageBox.Warning):
         dialog = QtGui.QMessageBox()
-        dialog.setWindowTitle("SuperCipher")
+        dialog.setWindowTitle(strings._('supercipher'))
         dialog.setWindowIcon(self.window_icon)
         dialog.setText(msg)
         dialog.setIcon(icon)

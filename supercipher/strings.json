@@ -1,4 +1,5 @@
 { "en": {
+    "supercipher": "SuperCipher",
     "arg_help_encrypt": "Files and folders to encrypt",
     "arg_help_decrypt": "Filename of supercipher file to decrypt",
     "arg_help_pubkey": "Fingerprint of gpg public key to encrypt to",
