@@ -1,4 +1,4 @@
-import os, random
+import os, helper
 from nose import with_setup
 from supercipher.gnupg import *
 
@@ -6,18 +6,10 @@ gpg = GnuPG(homedir=os.path.abspath('test/data/homedir'))
 plaintext_path = os.path.abspath('test/data/message.txt')
 ciphertext_path = os.path.abspath('test/data/message.txt.gpg')
 
-def helper_delete_file(filename):
-    "helper: delete a file, if it exists"
-    if os.path.exists(filename):
-        os.remove(filename)
-
-def helper_random_string(length):
-    return ''.join(random.choice('abcdefghijklmnopqrstuvwxyz0123456789') for _ in range(length))
-
 def setup_clean_crypto_files():
     "clean up files from older tests if needed"
-    helper_delete_file(plaintext_path)
-    helper_delete_file(ciphertext_path)
+    helper.delete_file(plaintext_path)
+    helper.delete_file(ciphertext_path)
 
 def test_gnupg_valid_pubkey_valid():
     "GnuPG.valid_pubkey should return true when passing in valid 40-char fingerprint"
@@ -58,15 +50,15 @@ def test_gnupg_valid_pubkey_missing():
 
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_symmetric_decrypt_bad_passphrase():
-    passphrase = helper_random_string(128)
-    plaintext = helper_random_string(256)
+    passphrase = helper.random_string(128)
+    plaintext = helper.random_string(256)
     
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
     # encrypt
     gpg.symmetric_encrypt('aes256', passphrase, plaintext_path)
-    helper_delete_file(plaintext_path)
+    helper.delete_file(plaintext_path)
 
     # decrypt
     try:
@@ -79,15 +71,15 @@ def test_gnupg_symmetric_decrypt_bad_passphrase():
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_symmetric_encryption():
     "should be able to encrypt with GnuPG.symmetric_encrypt and a passphrase, and decrypt with GnuPGP.symmetric_decrypt and same passphrase"
-    passphrase = helper_random_string(128)
-    plaintext = helper_random_string(256)
+    passphrase = helper.random_string(128)
+    plaintext = helper.random_string(256)
     
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
     # encrypt
     gpg.symmetric_encrypt('aes256', passphrase, plaintext_path)
-    helper_delete_file(plaintext_path)
+    helper.delete_file(plaintext_path)
 
     # decrypt
     gpg.symmetric_decrypt(ciphertext_path, passphrase)
@@ -98,15 +90,15 @@ def test_gnupg_symmetric_encryption():
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_pubkey_encryption():
     "should be able to encrypt with GnuPG.pubkey_encrypt, and decrypt with GnuPGP.pubkey_decrypt with valid pubkey and seckey"
-    passphrase = helper_random_string(128)
-    plaintext = helper_random_string(256)
+    passphrase = helper.random_string(128)
+    plaintext = helper.random_string(256)
     
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
     # encrypt
     gpg.pubkey_encrypt(plaintext_path, '6F6467FDF4462C38FE597CD0CA6C5413CF7BCA9E')
-    helper_delete_file(plaintext_path)
+    helper.delete_file(plaintext_path)
 
     # decrypt
     gpg.pubkey_decrypt(ciphertext_path)
@@ -117,15 +109,15 @@ def test_gnupg_pubkey_encryption():
 @with_setup(setup_clean_crypto_files)
 def test_gnupg_pubkey_encryption_missing_seckey():
     "when encrypting with GnuPG.pubkey_encrypt, should fail to decrypt with GnuPGP.pubkey_decrypt if seckey is missing"
-    passphrase = helper_random_string(128)
-    plaintext = helper_random_string(256)
+    passphrase = helper.random_string(128)
+    plaintext = helper.random_string(256)
     
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
     # encrypt
     gpg.pubkey_encrypt(plaintext_path, '77D4E195BE81A10047B06E4747AA62EF2712261B')
-    helper_delete_file(plaintext_path)
+    helper.delete_file(plaintext_path)
 
     # decrypt
     try:
