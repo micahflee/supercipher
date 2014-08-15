@@ -27,7 +27,9 @@ class SuperCipherGui(QtGui.QWidget):
     def start_encrypt(self, encrypt_filenames=None, pubkey=None):
         # file selection
         file_selection = FileSelection()
-        # todo: add encrypt_filenames to file_selection
+        if encrypt_filenames:
+            for filename in encrypt_filenames:
+                file_selection.file_list.add_file(filename)
 
         # main layout
         self.layout = QtGui.QHBoxLayout()
