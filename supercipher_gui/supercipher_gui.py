@@ -1,12 +1,12 @@
 import os, sys, subprocess, inspect, platform, argparse, socket, json
 from PyQt4 import QtCore, QtGui
-
-supercipher_gui_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+from file_selection import FileSelection
+import common
 
 try:
     import supercipher
 except ImportError:
-    sys.path.append(os.path.abspath(supercipher_gui_dir+"/.."))
+    sys.path.append(os.path.abspath(common.supercipher_gui_dir+"/.."))
     import supercipher
 
 window_icon = None
@@ -25,15 +25,15 @@ class SuperCipherGui(QtGui.QWidget):
         self.setWindowTitle('SuperCipher')
 
         # icon
-        self.window_icon = QtGui.QIcon("{0}/icon.png".format(supercipher_gui_dir))
+        self.window_icon = QtGui.QIcon("{0}/icon.png".format(common.supercipher_gui_dir))
         self.setWindowIcon(self.window_icon)
 
-        # label
-        label = QtGui.QLabel('The GUI is not finished yet')
+        # file selection
+        file_selection = FileSelection()
 
         # main layout
         self.layout = QtGui.QHBoxLayout()
-        self.layout.addWidget(label)
+        self.layout.addLayout(file_selection)
         self.setLayout(self.layout)
         self.show()
 
