@@ -48,7 +48,7 @@ class GnuPG(object):
 
     def pubkey_encrypt(self, filename, pubkey):
         try:
-            subprocess.check_call(self.gpg_command + ['--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename])
+            subprocess.check_call(self.gpg_command + ['--trust-model', 'always', '--encrypt', '--recipient', pubkey, filename], stdin=self.devnull, stdout=self.devnull, stderr=self.devnull)
         except subprocess.CalledProcessError:
             raise MissingPubkey
 
