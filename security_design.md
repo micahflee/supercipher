@@ -52,6 +52,7 @@ When using SuperCipher in decryption mode, it accepts the following input:
 
 * The SuperCipher file
 * A passphrase
+* An output folder
 
 Using the salt included in the SuperCipher file and the same method when encrypting, it derives six passphrases using the passphrase inputed.
 
@@ -59,8 +60,15 @@ If the SuperCipher file states that it was also encrypted to a public key, it tr
 
 It then tries decrypting the GnuPG file included in the SuperCipher file in reverse order, starting with CAMELLIA256 and passphrase6 and ending with 3DES and passphrase1.
 
+Finally, it extracts the gzipped tar archive to the output folder.
+
 ## Threats it Protects Against
 
-If the attacker has a weakness is some but not all layers of encryption, the file should remain secure. Until the attacker defeats the outer layer (in this case CAMELLIA256), they cannot attempt to attack the inner layers.
+If the attacker has a weakness in some but not all layers of encryption, the file should remain secure. Until the attacker defeats the outer layer (in this case CAMELLIA256), he cannot attempt to attack the inner layers. If he gets to a cipher that he does not have a weakness for, his attack stops.
 
-If the attacker successfully attacks the outer layer and recovers the passphrase used to encrypt it, he should not be able to use that passphrase to recover the passphrase used to encrypt the next layer. In order to do that he would need to successfully attack both key deriviation functions.
+If the attacker successfully attacks the outer layer and recovers the passphrase used to encrypt it, he should not be able to use that passphrase to recover the passphrase used to encrypt the next layer. In order to do that he would need to exploit weaknesses in both key deriviation functions.
+
+Because the passphrases get derived using a random salt, it's not possible to pre-compute a rainbow table of SuperCipher passphrases.
+
+Dictionary attacks will work against SuperCipher files, but they will be slow and require a large amount of computation resources. To test a single passphrase, the attacker needs to compute 100000 iterations of PBKDF2 and 2**14 iterations of scrypt six times. Since the passphrase derivation is chained, it cannot be computed in parallel. With a good passphrase, it should be unfeasible for an attacker to guess.
+
