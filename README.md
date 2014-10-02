@@ -10,14 +10,14 @@ If you supply a public key, it encrypts the file one final time using public key
 
 The passphrase is stretched into different keys using: PBKDF2, scrypt
 
-Symmetric encryption is outsourced to GPG, and ciphers used include: 3DES, CAST5, BLOWFISH, AES256, TWOFISH, CAMELLIA256
+Symmetric encryption implementation is [PyCrypto](https://www.dlitz.net/software/pycrypto/), and ciphers used include: 3DES, CAST5, BLOWFISH, AES
 
 ## For Developers
 
 Install dependencies:
 
 ```sh
-sudo apt-get install build-essential python-all fakeroot python-stdeb python-flask python-qt4 python-scrypt python-pbkdf2
+sudo apt-get install build-essential python-all fakeroot python-stdeb python-flask python-qt4 python-scrypt python-pbkdf2 python-crypto
 ```
 
 Build .deb an install:
@@ -39,9 +39,8 @@ nosetests
 ```
 [4 bytes  ] Magic number 0xEBA34B1C
 [3 bytes  ] SuperCipher version major.minor.patch
-[1 byte   ] Ciphers used: 1 is use, 0 is don't use, in this order:
-            3DES, CAST5, BLOWFISH, AES256, TWOFISH, CAMELLIA256, pubkey
-            (the last bit is always 0)
-[16 bytes ] Salt for PBKDF2 key derivation
+[1 byte   ] Ciphers used: 0x00000000 means no pubkey is used
+                          0x00000001 means pubkey is used
+[16 bytes ] Salt for PBKDF2 and scrypt key derivation
 [until EOF] Ciphertext
 ```
