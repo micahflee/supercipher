@@ -22,7 +22,7 @@
     "get_passphrase": "Enter passphrase: ",
     "get_passphrase2": "Retype passphrase: ",
     "passphrase_mismatch": "Passphrases do not match. Try again:",
-    "deriving_passphrases": "Deriving passphrases for each cipher:",
+    "deriving_keys": "Deriving keys for each cipher:",
     "encrypt_encrypting_files": "Encrypting files {0}",
     "encrypt_encrypted_to": "Superenciphered file: {0}",
     "encrypt_encrypting_cipher": "Encrypting with each cipher:",

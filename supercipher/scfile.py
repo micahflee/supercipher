@@ -99,7 +99,7 @@ class SuperCipherFile(object):
             buf = self.infile.read(1048576)
             outfile.write(buf)
 
-    def decrypt(self, gpg, passphrases, output_dir, ciphers):
+    def decrypt(self, gpg, keys, output_dir, ciphers):
         if not self.infile:
             raise DecryptBeforeLoading
 
@@ -116,7 +116,7 @@ class SuperCipherFile(object):
         # decrypt all the layers of symmetric encryption
         for cipher in reversed_ciphers:
             print strings._('scfile_decrypting_symmetric').format(cipher)
-            gpg.symmetric_decrypt(self.ciphertext_filename, passphrases[cipher])
+            gpg.symmetric_decrypt(self.ciphertext_filename, keys[cipher])
             self.ciphertext_filename_delete_and_truncate()
 
         # extract

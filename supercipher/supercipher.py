@@ -69,25 +69,32 @@ def compress(filenames, archive_filename):
         for filename in filenames:
             tar.add(filename, recursive=True, filter=reset)
 
-# stretch passphrase into 6 new passphrases
+# stretch passphrase into 6 new keys
 def stretch_passphrase(passphrase, salt):
     global ciphers
-    passphrases = {}
-    sys.stdout.write(strings._('deriving_passphrases'))
+    keys = {}
+    sys.stdout.write(strings._('deriving_keys'))
     sys.stdout.flush()
+
+    # start with the passphrase
+    key = passphrase
+
+    # derive a key for each cipher
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        passphrase = str(PBKDF2.crypt(passphrase, salt.encode('hex'), 100000))
-        passphrase = scrypt.hash(passphrase, salt, N=2**14, r=8, p=1)
-        passphrase = base64.b64encode(passphrase)
-        passphrases[cipher] = passphrase
+
+        # rounds of pbkdf2 and scrypt
+        key = str(PBKDF2.crypt(key, salt.encode('hex'), 100000))
+        key = scrypt.hash(key, salt, N=2**14, r=8, p=1)
+        key = base64.b64encode(key)
+        keys[cipher] = key
     sys.stdout.write('\n')
 
-    return passphrases
+    return keys
 
 # symetrically encrypt using each cipher and passphrase
-def symmetric_encrypt(archive_filename, passphrases):
+def symmetric_encrypt(archive_filename, keys):
     global gpg, ciphers
     current_filename = archive_filename
     sys.stdout.write(strings._('encrypt_encrypting_cipher'))
@@ -95,7 +102,7 @@ def symmetric_encrypt(archive_filename, passphrases):
     for cipher in ciphers:
         sys.stdout.write(' {0}'.format(cipher))
         sys.stdout.flush()
-        gpg.symmetric_encrypt(cipher, passphrases[cipher], current_filename)
+        gpg.symmetric_encrypt(cipher, keys[cipher], current_filename)
         os.remove(current_filename)
         current_filename += '.gpg'
     sys.stdout.write('\n')
@@ -124,8 +131,8 @@ def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
 
         if not passphrase:
             passphrase = get_passphrase(True)
-        passphrases = stretch_passphrase(passphrase, salt)
-        current_filename = symmetric_encrypt(archive_filename, passphrases)
+        keys = stretch_passphrase(passphrase, salt)
+        current_filename = symmetric_encrypt(archive_filename, keys)
         current_filename = pubkey_encrypt(current_filename, pubkey)
 
         # write the output file
@@ -148,8 +155,8 @@ def decrypt(filename, output_dir, passphrase=None):
         scf.load(filename, tmp_dir)
         if not passphrase:
             passphrase = get_passphrase()
-        passphrases = stretch_passphrase(passphrase, scf.salt)
-        scf.decrypt(gpg, passphrases, output_dir, ciphers)
+        keys = stretch_passphrase(passphrase, scf.salt)
+        scf.decrypt(gpg, keys, output_dir, ciphers)
         print strings._('decrypt_decrypted_to').format(output_dir)
 
     except InvalidSuperCipherFile:
