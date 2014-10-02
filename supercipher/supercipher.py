@@ -1,8 +1,9 @@
-import os, sys, inspect, argparse, base64, shutil, hashlib, scrypt, tarfile, getpass
+import os, sys, inspect, argparse, base64, scrypt
 from gnupg import GnuPG, InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase
 from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
 from pbkdf2 import PBKDF2
-import strings
+
+import strings, helpers
 
 supercipher_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 version = open('{0}/version'.format(supercipher_dir)).read().strip()
@@ -10,64 +11,6 @@ version = open('{0}/version'.format(supercipher_dir)).read().strip()
 ciphers = ['3des', 'cast5', 'blowfish', 'aes256', 'twofish', 'camellia256']
 
 gpg = GnuPG()
-
-def get_random(bits_of_entropy, bytes_returned=64):
-    return hashlib.sha512(os.urandom(bits_of_entropy)).digest()[:bytes_returned]
-
-def get_tmp_dir():
-    try:
-        while True:
-            random_string = base64.b32encode(get_random(4, 16)).lower().replace('=','')
-            tmp_dir = os.path.join('/tmp', 'supercipher_{0}'.format(random_string))
-            if not os.path.exists(tmp_dir):
-                os.makedirs(tmp_dir, 0700)
-                return tmp_dir
-    except:
-        print strings._('mkdir_error').format(tmp_dir)
-        return False
-
-def destroy_tmp_dir(tmp_dir):
-    shutil.rmtree(tmp_dir, ignore_errors=True)
-
-def get_passphrase(ask_twice=False):
-    if ask_twice:
-        valid_passphrase = False
-        while not valid_passphrase:
-            passphrase = getpass.getpass(strings._('get_passphrase'))
-            passphrase2 = getpass.getpass(strings._('get_passphrase2'))
-            if passphrase == passphrase2:
-                valid_passphrase = True
-            else:
-                print strings._('passphrase_mismatch')
-    else:
-        passphrase = getpass.getpass(strings._('get_passphrase'))
-
-    return passphrase
-
-# compress the plaintext file, preserving its filename
-def compress(filenames, archive_filename):
-    print strings._('compressing')
-
-    def reset(tarinfo):
-        strip_dir = False
-        absfilename = '/{0}'.format(tarinfo.name)
-        for filename in filenames:
-            if os.path.isdir(filename) and absfilename.startswith(filename):
-                strip_dir = True
-                tarinfo.name = tarinfo.name[len(os.path.dirname(filename)):]
-
-        if not strip_dir:
-            tarinfo.name = os.path.basename(tarinfo.name)
-
-        print strings._('adding').format(tarinfo.name)
-
-        tarinfo.uid = tarinfo.gid = 0
-        tarinfo.uname = tarinfo.gname = "root"
-        return tarinfo
-
-    with tarfile.open(archive_filename, 'w:gz') as tar:
-        for filename in filenames:
-            tar.add(filename, recursive=True, filter=reset)
 
 # stretch passphrase into 6 new keys
 def stretch_passphrase(passphrase, salt):
@@ -118,19 +61,18 @@ def pubkey_encrypt(filename, pubkey):
 
     return filename
 
-
 def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
     print strings._('encrypt_encrypting_files').format(filenames)
 
-    salt = get_random(16, 16)
-    tmp_dir = get_tmp_dir()
+    salt = helpers.get_random(16, 16)
+    tmp_dir = helpers.get_tmp_dir()
 
     try:
         archive_filename = os.path.join(tmp_dir, 'archive.tar.gz')
-        compress(filenames, archive_filename)
+        helpers.compress(filenames, archive_filename)
 
         if not passphrase:
-            passphrase = get_passphrase(True)
+            passphrase = helpers.get_passphrase(True)
         keys = stretch_passphrase(passphrase, salt)
         current_filename = symmetric_encrypt(archive_filename, keys)
         current_filename = pubkey_encrypt(current_filename, pubkey)
@@ -143,18 +85,18 @@ def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
         print strings._('cleanup')
 
     # clean up
-    destroy_tmp_dir(tmp_dir)
+    helpers.destroy_tmp_dir(tmp_dir)
 
 def decrypt(filename, output_dir, passphrase=None):
     print strings._('decrypt_decrypting_file').format(filename)
 
-    tmp_dir = get_tmp_dir()
+    tmp_dir = helpers.get_tmp_dir()
 
     try:
         scf = SuperCipherFile(version)
         scf.load(filename, tmp_dir)
         if not passphrase:
-            passphrase = get_passphrase()
+            passphrase = helpers.get_passphrase()
         keys = stretch_passphrase(passphrase, scf.salt)
         scf.decrypt(gpg, keys, output_dir, ciphers)
         print strings._('decrypt_decrypted_to').format(output_dir)
@@ -173,7 +115,7 @@ def decrypt(filename, output_dir, passphrase=None):
         print strings._('cleanup')
 
     # clean up
-    destroy_tmp_dir(tmp_dir)
+    helpers.destroy_tmp_dir(tmp_dir)
 
 def main():
     strings.load_strings(supercipher_dir)

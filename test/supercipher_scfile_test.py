@@ -11,14 +11,14 @@ output_file = os.path.abspath('test/data/output_file')
 def setup():
     "make a new tmp_dir"
     global tmp_dir
-    tmp_dir = supercipher.get_tmp_dir()
+    tmp_dir = supercipher.helpers.get_tmp_dir()
     shutil.rmtree(output_dir, ignore_errors=True)
     helper.delete_file(output_file)
 
 def teardown():
     "destroy the existing tmp_dir"
     global tmp_dir
-    supercipher.destroy_tmp_dir(tmp_dir)
+    supercipher.helpers.destroy_tmp_dir(tmp_dir)
 
 def test_scfile_version_to_bytes():
     "SuperCipherFile.version_to_bytes should convert the version to 3 bytes"

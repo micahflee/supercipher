@@ -1,4 +1,4 @@
-import os, helper
+import os, helper, shutil
 from nose import with_setup
 from supercipher import *
 from supercipher.gnupg import MissingPubkey
