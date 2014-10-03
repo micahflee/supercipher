@@ -2,10 +2,11 @@ import os, helper, shutil
 from nose import with_setup
 from supercipher import *
 from supercipher.gnupg import MissingPubkey
-supercipher.gpg = GnuPG(homedir=os.path.abspath('test/data/homedir'))
 
-import supercipher.strings
-supercipher.strings.load_strings(supercipher.supercipher_dir)
+import supercipher.strings as strings
+import supercipher.common as common
+strings.load_strings(common.supercipher_dir)
+common.gpg = common.gnupg.GnuPG(homedir=os.path.abspath('test/data/homedir'))
 
 output_dir = os.path.abspath('test/data/output_dir')
 output_file = os.path.abspath('test/data/output_file')
