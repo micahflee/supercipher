@@ -49,7 +49,7 @@ def compress(filenames, archive_filename):
         if not strip_dir:
             tarinfo.name = os.path.basename(tarinfo.name)
 
-        print strings._('adding').format(tarinfo.name)
+        #print strings._('adding').format(tarinfo.name)
 
         tarinfo.uid = tarinfo.gid = 0
         tarinfo.uname = tarinfo.gname = "root"
