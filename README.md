@@ -10,7 +10,7 @@ If you supply a public key, it encrypts the file one final time using public key
 
 The passphrase is stretched into different keys using: PBKDF2, scrypt
 
-Symmetric encryption implementation is [PyCrypto](https://www.dlitz.net/software/pycrypto/), and ciphers used include: 3DES, CAST5, BLOWFISH, AES
+Symmetric encryption implementation is [PyCrypto](https://www.dlitz.net/software/pycrypto/), and ciphers used include: CAST5, BLOWFISH, AES
 
 ## For Developers
 
@@ -39,8 +39,8 @@ nosetests
 ```
 [4 bytes  ] Magic number 0xEBA34B1C
 [3 bytes  ] SuperCipher version major.minor.patch
-[1 byte   ] Ciphers used: 0x00000000 means no pubkey is used
-                          0x00000001 means pubkey is used
+[1 byte   ] Options: 0x00000001 means pubkey is used
+                     (other bits might be used in later versions)
 [16 bytes ] Salt for PBKDF2 and scrypt key derivation
 [until EOF] Ciphertext
 ```

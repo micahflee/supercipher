@@ -21,14 +21,8 @@ class SuperCipherFile(object):
             self.version = version
 
         self.MAGIC_NUMBER = '\xEB\xA3\x4B\x1C'
-        self.CIPHERS = {
-            '3des':        0b10000000,
-            'cast5':       0b01000000,
-            'blowfish':    0b00100000,
-            'aes256':      0b00010000,
-            'twofish':     0b00001000,
-            'camellia256': 0b00000100,
-            'pubkey':      0b00000010,
+        self.OPTIONS = {
+            'pubkey': 0b00000001
         }
 
         self.infile = None
@@ -53,7 +47,7 @@ class SuperCipherFile(object):
         sys.stdout.flush()
 
         plaintext = open(archive_filename, 'r').read()
-        unlink(archive_filename)
+        os.unlink(archive_filename)
 
         for cipher in common.ciphers:
             sys.stdout.write(' {0}'.format(cipher))
@@ -81,19 +75,12 @@ class SuperCipherFile(object):
                 cipher = CAST.new(keys[cipher], CAST.MODE_OPENPGP, iv)
                 ciphertext = cipher.encrypt(plaintext)
 
-            elif cipher == '3des':
-                # https://www.dlitz.net/software/pycrypto/api/current/Crypto.Cipher.DES3-module.html
-                nonce = Random.new().read(DES.block_size/2)
-                ctr = Counter.new(DES.block_size*8/2, prefix=nonce)
-                cipher = DES.new(keys[cipher], DES.MODE_CTR, counter=ctr)
-                ciphertext = nonce + cipher.encrypt(plaintext)
-
             # today's plaintext is yesterday's ciphertext
             plaintext = ciphertext
         sys.stdout.write('\n')
 
         # save the new super-enciphered ciphertext
-        current_filename = '{0}.3des.cast5.blowfish.aes256'.format(archive_filename)
+        current_filename = '{0}.cast5.blowfish.aes256'.format(archive_filename)
         open(current_filename, 'w').write(plaintext)
 
         # encrypt with pubkey
@@ -144,9 +131,6 @@ class SuperCipherFile(object):
             elif cipher == 'cast5':
                 # CAST5 needs 128-bit (16-byte) key
                 keys[cipher] = key[:16]
-            elif cipher == '3des':
-                # 3DES needs 192-bit (24-byte) key
-                keys[cipher] = key[:24]
 
         sys.stdout.write('\n')
 
@@ -169,12 +153,11 @@ class SuperCipherFile(object):
         # write version (3 bytes)
         outfile.write(self.version_to_bytes(self.version))
 
-        # write ciphers
-        ciphers = self.CIPHERS['3des'] | self.CIPHERS['cast5'] | self.CIPHERS['blowfish'] | \
-                  self.CIPHERS['aes256'] | self.CIPHERS['twofish'] | self.CIPHERS['camellia256']
+        # write options
+        options = 0
         if pubkey:
-            ciphers = ciphers | self.CIPHERS['pubkey']
-        outfile.write(chr(ciphers))
+            options = options | self.OPTIONS['pubkey']
+        outfile.write(chr(options))
 
         # write salt
         outfile.write(salt)
@@ -189,10 +172,6 @@ class SuperCipherFile(object):
 
         outfile.close()
 
-    def ciphertext_filename_delete_and_truncate(self):
-        os.remove(self.ciphertext_filename)
-        self.ciphertext_filename = os.path.splitext(self.ciphertext_filename)[0]
-
     def load(self, supercipher_filename):
         self.infile = open(supercipher_filename, 'rb')
 
@@ -203,7 +182,7 @@ class SuperCipherFile(object):
         # read header data
         magic_number = self.infile.read(4)
         version = self.infile.read(3)
-        ciphers = self.infile.read(1)
+        options = self.infile.read(1)
         salt = self.infile.read(16)
 
         # validate headers
@@ -212,13 +191,12 @@ class SuperCipherFile(object):
         version = self.bytes_to_version(version)
         if version > self.version:
             raise FutureFileVersion
-        self.ciphers = ciphers
+        self.options = options
         self.salt = salt
 
-        # how many times was this encrypted?
-        self.crypt_count = bin(ord(self.ciphers)).count('1')
-        self.ciphertext_filename = os.path.join(self.tmp_dir, 'archive.tar.gz')
-        for i in range(self.crypt_count):
+        # build the filename
+        self.ciphertext_filename = os.path.join(self.tmp_dir, 'archive.tar.gz.cast5.blowfish.aes256')
+        if bool(ord(self.options) & self.OPTIONS['pubkey']):
             self.ciphertext_filename += '.gpg'
 
         # write ciphertext file
@@ -234,24 +212,53 @@ class SuperCipherFile(object):
             raise DecryptBeforeLoading
 
         # if there's a pubkey wrapper, decrypt that first 
-        if bool(ord(self.ciphers) & self.CIPHERS['pubkey']):
+        if bool(ord(self.options) & self.OPTIONS['pubkey']):
             print strings._('scfile_decrypting_pubkey')
             common.gpg.pubkey_decrypt(self.ciphertext_filename)
-            self.ciphertext_filename_delete_and_truncate()
+
+            # delete the .gpg file
+            os.remove(self.ciphertext_filename)
+            self.ciphertext_filename = self.ciphertext_filename.rstrip('.gpg')
 
         # reverse the order of ciphers list
         reversed_ciphers = common.ciphers[:]
         reversed_ciphers.reverse()
 
         # decrypt all the layers of symmetric encryption
+        ciphertext = open(self.ciphertext_filename, 'r').read()
         for cipher in reversed_ciphers:
             print strings._('scfile_decrypting_symmetric').format(cipher)
-            common.gpg.symmetric_decrypt(self.ciphertext_filename, keys[cipher])
-            self.ciphertext_filename_delete_and_truncate()
+
+            if cipher == 'aes256':
+                bs = AES.block_size
+                eiv = ciphertext[:bs]
+                ciphertext = ciphertext[bs:]
+                cipher = AES.new(keys[cipher], AES.MODE_CFB, eiv)
+
+            if cipher == 'blowfish':
+                bs = Blowfish.block_size
+                eiv = ciphertext[:bs]
+                ciphertext = ciphertext[bs:]
+                cipher = Blowfish.new(keys[cipher], Blowfish.MODE_CBC, eiv)
+
+            if cipher == 'cast5':
+                bs = CAST.block_size
+                eiv = ciphertext[:bs+2]
+                ciphertext = ciphertext[bs+2:]
+                cipher = CAST.new(keys[cipher], CAST.MODE_OPENPGP, eiv)
+
+            plaintext = cipher.decrypt(ciphertext)
+            ciphertext = plaintext
+
+        # delete the .cast5.blowfish.aes256 file
+        os.unlink(self.ciphertext_filename)
+
+        # write archive to disk
+        archive_filename = self.ciphertext_filename.rstrip('.cast5.blowfish.aes256')
+        open(archive_filename, 'w').write(plaintext)
 
         # extract
         print strings._('scfile_extracting')
-        archive_filename = self.ciphertext_filename
         if not tarfile.is_tarfile(archive_filename):
             raise InvalidArchive
         tar = tarfile.open(archive_filename, 'r:gz')
