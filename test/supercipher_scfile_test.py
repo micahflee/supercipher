@@ -9,17 +9,6 @@ strings.load_strings(common.supercipher_dir)
 output_dir = os.path.abspath('test/data/output_dir')
 output_file = os.path.abspath('test/data/output_file')
 
-def setup():
-    "make a SuperCipherFile object and init it"
-    global scf
-    scf = SuperCipherFile()
-    scf.init()
-
-def teardown():
-    "clean up after SuperCipherFile"
-    global scf
-    scf.cleanup()
-
 def test_scfile_version_to_bytes():
     "SuperCipherFile.version_to_bytes should convert the version to 3 bytes"
     scf = SuperCipherFile()
@@ -34,9 +23,9 @@ def test_scfile_bytes_to_version():
     assert scf.bytes_to_version('\x00\x00\x03') == '0.0.3'
     assert scf.bytes_to_version('\xff\xff\xff') == '255.255.255'
 
-@with_setup(setup, teardown)
 def test_scfile_load_small_file():
     "SuperCipher files should all be at least 24 bytes"
+    scf = SuperCipherFile()
     try:
         scf.load(os.path.abspath('test/data/fake_too_small.sc'))
     except InvalidSuperCipherFile:
@@ -44,9 +33,9 @@ def test_scfile_load_small_file():
     else:
         assert False
 
-@with_setup(setup, teardown)
 def test_scfile_load_wrong_magic_number():
     "SuperCipher files should begin with the magic number 0xEBA34B1C"
+    scf = SuperCipherFile()
     try:
         scf.load(os.path.abspath('test/data/fake_wrong_magic_number.tc'))
     except InvalidSuperCipherFile:
@@ -54,9 +43,9 @@ def test_scfile_load_wrong_magic_number():
     else:
         assert False
 
-@with_setup(setup, teardown)
 def test_scfile_load_future_version():
     "should throw error if loading a SuperCipher file from a future version"
+    scf = SuperCipherFile()
     try:
         scf.load(os.path.abspath('test/data/fake_future_version.tc'))
     except FutureFileVersion:
@@ -64,9 +53,9 @@ def test_scfile_load_future_version():
     else:
         assert False
 
-@with_setup(setup, teardown)
 def test_scfile_decrypt_before_loading():
     "you must run SuperCipherFile.load before .decrypt"
+    scf = SuperCipherFile()
     try:
         scf.decrypt('test', output_dir)
     except DecryptBeforeLoading:
@@ -74,9 +63,9 @@ def test_scfile_decrypt_before_loading():
     else:
         assert False
 
-@with_setup(setup, teardown)
 def test_scfile_decrypt_invalid_archive():
     "should fail when trying to decrypt a SuperCipher file with an invalid .tar.gz inside"
+    scf = SuperCipherFile()
     try:
         scf.load(os.path.abspath('test/data/fake_bad_archive.sc'))
         keys = scf.stretch_passphrase('test', scf.salt)
@@ -86,9 +75,9 @@ def test_scfile_decrypt_invalid_archive():
     else:
         assert False
 
-@with_setup(setup, teardown)
 def test_scfile_decrypt():
     "should be able to decrypt a valid SuperCipher file"
+    scf = SuperCipherFile()
     scf.load(os.path.abspath('test/data/real1.sc'))
     keys = scf.stretch_passphrase('test', scf.salt)
     scf.decrypt(keys, output_dir)
@@ -102,15 +91,11 @@ def test_scfile_save_load():
 
     # save
     scf = SuperCipherFile()
-    scf.init()
     scf.save(salt, archive_filename, output_file, False)
     assert os.path.exists(output_file)
-    scf.cleanup()
 
     # load
     scf = SuperCipherFile()
-    scf.init()
     scf.load(output_file)
     assert scf.salt == salt
-    scf.cleanup()
 
