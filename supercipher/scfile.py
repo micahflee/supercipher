@@ -1,5 +1,11 @@
 import os, sys, tarfile, base64, scrypt
 from pbkdf2 import PBKDF2
+
+from Crypto.Cipher import AES, Blowfish, CAST, DES
+from Crypto import Random
+from Crypto.Util import Counter
+from struct import pack
+
 import strings, helpers, common
 
 class InvalidSuperCipherFile(Exception): pass
@@ -43,16 +49,52 @@ class SuperCipherFile(object):
         keys = self.stretch_passphrase(passphrase, salt)
 
         # encrypt with symmetric ciphers
-        current_filename = archive_filename
         sys.stdout.write(strings._('encrypt_encrypting_cipher'))
         sys.stdout.flush()
+
+        plaintext = open(archive_filename, 'r').read()
+        unlink(archive_filename)
+
         for cipher in common.ciphers:
             sys.stdout.write(' {0}'.format(cipher))
             sys.stdout.flush()
-            common.gpg.symmetric_encrypt(cipher, keys[cipher], current_filename)
-            os.remove(current_filename)
-            current_filename += '.gpg'
+
+            if cipher == 'aes256':
+                # https://www.dlitz.net/software/pycrypto/api/current/Crypto.Cipher.AES-module.html
+                iv = Random.new().read(AES.block_size)
+                cipher = AES.new(keys[cipher], AES.MODE_CFB, iv)
+                ciphertext = iv + cipher.encrypt(plaintext)
+
+            elif cipher == 'blowfish':
+                # https://www.dlitz.net/software/pycrypto/api/current/Crypto.Cipher.Blowfish-module.html
+                bs = Blowfish.block_size
+                iv = Random.new().read(bs)
+                cipher = Blowfish.new(keys[cipher], Blowfish.MODE_CBC, iv)
+                plen = bs - divmod(len(plaintext),bs)[1]
+                padding = [plen]*plen
+                padding = pack('b'*plen, *padding)
+                ciphertext = iv + cipher.encrypt(plaintext + padding)
+
+            elif cipher == 'cast5':
+                # https://www.dlitz.net/software/pycrypto/api/current/Crypto.Cipher.CAST-module.html
+                iv = Random.new().read(CAST.block_size)
+                cipher = CAST.new(keys[cipher], CAST.MODE_OPENPGP, iv)
+                ciphertext = cipher.encrypt(plaintext)
+
+            elif cipher == '3des':
+                # https://www.dlitz.net/software/pycrypto/api/current/Crypto.Cipher.DES3-module.html
+                nonce = Random.new().read(DES.block_size/2)
+                ctr = Counter.new(DES.block_size*8/2, prefix=nonce)
+                cipher = DES.new(keys[cipher], DES.MODE_CTR, counter=ctr)
+                ciphertext = nonce + cipher.encrypt(plaintext)
+
+            # today's plaintext is yesterday's ciphertext
+            plaintext = ciphertext
         sys.stdout.write('\n')
+
+        # save the new super-enciphered ciphertext
+        current_filename = '{0}.3des.cast5.blowfish.aes256'.format(archive_filename)
+        open(current_filename, 'w').write(plaintext)
 
         # encrypt with pubkey
         if pubkey:
