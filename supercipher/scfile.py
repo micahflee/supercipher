@@ -26,10 +26,12 @@ class SuperCipherFile(object):
         }
 
         self.infile = None
+        self.tmp_dir = helpers.get_tmp_dir()
+
+    def __del__(self):
+        helpers.destroy_tmp_dir(self.tmp_dir)
 
     def lock(self, output_filename, filenames, passphrase, pubkey=None):
-        self.init()
-
         # random salt
         salt = helpers.get_random(16, 16)
 
@@ -62,12 +64,7 @@ class SuperCipherFile(object):
         self.save(salt, current_filename, output_filename, bool(pubkey))
         print strings._('encrypt_encrypted_to').format(output_filename)
 
-        # cleanup
-        self.cleanup()
-
     def unlock(self, output_dir, input_filename, passphrase):
-        self.init()
-
         # load the supercipher file
         self.load(input_filename)
 
@@ -77,15 +74,6 @@ class SuperCipherFile(object):
         # decrypt files
         self.decrypt(keys, output_dir)
         print strings._('decrypt_decrypted_to').format(output_dir)
-
-        # cleanup
-        self.cleanup()
-
-    def init(self):
-        self.tmp_dir = helpers.get_tmp_dir()
-
-    def cleanup(self):
-        helpers.destroy_tmp_dir(self.tmp_dir)
 
     # stretch passphrase into 6 new keys
     def stretch_passphrase(self, passphrase, salt):
@@ -156,7 +144,6 @@ class SuperCipherFile(object):
 
         # file must be at least 24 bytes, plus ciphertext
         if os.stat(supercipher_filename).st_size <= 24:
-            self.cleanup()
             raise InvalidSuperCipherFile
 
         # read header data
@@ -167,11 +154,9 @@ class SuperCipherFile(object):
 
         # validate headers
         if magic_number != self.MAGIC_NUMBER:
-            self.cleanup()
             raise InvalidSuperCipherFile
         version = self.bytes_to_version(version)
         if version > self.version:
-            self.cleanup()
             raise FutureFileVersion
         self.ciphers = ciphers
         self.salt = salt
@@ -192,7 +177,6 @@ class SuperCipherFile(object):
 
     def decrypt(self, keys, output_dir):
         if not self.infile:
-            self.cleanup()
             raise DecryptBeforeLoading
 
         # if there's a pubkey wrapper, decrypt that first 
@@ -215,7 +199,6 @@ class SuperCipherFile(object):
         print strings._('scfile_extracting')
         archive_filename = self.ciphertext_filename
         if not tarfile.is_tarfile(archive_filename):
-            self.cleanup()
             raise InvalidArchive
         tar = tarfile.open(archive_filename, 'r:gz')
         names = tar.getnames()

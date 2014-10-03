@@ -15,7 +15,6 @@ def encrypt(filenames, output_filename, pubkey=None, passphrase=None):
         scf.lock(output_filename, filenames, passphrase, pubkey)
     except KeyboardInterrupt:
         print strings._('cleanup')
-        scf.cleanup()
 
 def decrypt(filename, output_dir, passphrase=None):
     print strings._('decrypt_decrypting_file').format(filename)
@@ -38,7 +37,6 @@ def decrypt(filename, output_dir, passphrase=None):
         print strings._('decrypt_error_invalid_passphrase')
     except KeyboardInterrupt:
         print strings._('cleanup')
-        scf.cleanup()
 
 def main():
     strings.load_strings(common.supercipher_dir)
