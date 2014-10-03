@@ -92,8 +92,20 @@ class SuperCipherFile(object):
             # rounds of pbkdf2 and scrypt
             key = str(PBKDF2.crypt(key, salt.encode('hex'), 100000))
             key = scrypt.hash(key, salt, N=2**14, r=8, p=1)
-            key = base64.b64encode(key)
-            keys[cipher] = key
+
+            if cipher == 'aes256':
+                # AES256 needs 256-bit (32-byte) key
+                keys[cipher] = key[:32]
+            elif cipher == 'blowfish':
+                # Blowfish keys very from 32-448 bits, but we'll use 256-bit (32-byte) key
+                keys[cipher] = key[:32]
+            elif cipher == 'cast5':
+                # CAST5 needs 128-bit (16-byte) key
+                keys[cipher] = key[:16]
+            elif cipher == '3des':
+                # 3DES needs 192-bit (24-byte) key
+                keys[cipher] = key[:24]
+
         sys.stdout.write('\n')
 
         return keys
