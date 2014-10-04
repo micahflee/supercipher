@@ -63,6 +63,18 @@ def test_scfile_decrypt_before_loading():
     else:
         assert False
 
+def test_scfile_decrypt_invalid_passphrase():
+    "should fail when trying to decrypt a SuperCipher file using an invalid passphrase"
+    scf = SuperCipherFile()
+    try:
+        scf.load(os.path.abspath('test/data/real1.sc'))
+        keys = scf.stretch_passphrase('WRONG', scf.salt)
+        scf.decrypt(keys, output_dir)
+    except InvalidDecryptionPassphrase:
+        assert True
+    else:
+        assert False
+
 def test_scfile_decrypt_invalid_archive():
     "should fail when trying to decrypt a SuperCipher file with an invalid .tar.gz inside"
     scf = SuperCipherFile()
