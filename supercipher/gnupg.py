@@ -4,7 +4,6 @@ class InvalidPubkeyLength(Exception): pass
 class InvalidPubkeyNotHex(Exception): pass
 class MissingPubkey(Exception): pass
 class MissingSeckey(Exception): pass
-class InvalidDecryptionPassphrase(Exception): pass
 
 class GnuPG(object):
 
@@ -32,19 +31,6 @@ class GnuPG(object):
             raise MissingPubkey
 
         return True
-
-    def symmetric_encrypt(self, cipher, passphrase, filename):
-        p = subprocess.Popen(self.gpg_command + ['--passphrase-fd', '0', '--symmetric', '--cipher-algo', cipher, filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.devnull)
-        p.communicate(passphrase)
-        p.wait()
-
-    def symmetric_decrypt(self, filename, passphrase):
-        output_filename = os.path.splitext(filename)[0]
-        p = subprocess.Popen(self.gpg_command + ['--output', output_filename, '--passphrase-fd', '0', '--decrypt', filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.devnull)
-        p.communicate(passphrase)
-        returncode = p.wait()
-        if returncode != 0:
-            raise InvalidDecryptionPassphrase
 
     def pubkey_encrypt(self, filename, pubkey):
         try:

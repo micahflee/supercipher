@@ -12,6 +12,7 @@ class InvalidSuperCipherFile(Exception): pass
 class FutureFileVersion(Exception): pass
 class InvalidArchive(Exception): pass
 class DecryptBeforeLoading(Exception): pass
+class InvalidDecryptionPassphrase(Exception): pass
 
 class SuperCipherFile(object):
     def __init__(self, version=None):
@@ -227,27 +228,29 @@ class SuperCipherFile(object):
         # decrypt all the layers of symmetric encryption
         ciphertext = open(self.ciphertext_filename, 'r').read()
         for cipher in reversed_ciphers:
-            print strings._('scfile_decrypting_symmetric').format(cipher)
+            try:
+                print strings._('scfile_decrypting_symmetric').format(cipher)
+                if cipher == 'aes256':
+                    bs = AES.block_size
+                    eiv = ciphertext[:bs]
+                    ciphertext = ciphertext[bs:]
+                    cipher = AES.new(keys[cipher], AES.MODE_CFB, eiv)
 
-            if cipher == 'aes256':
-                bs = AES.block_size
-                eiv = ciphertext[:bs]
-                ciphertext = ciphertext[bs:]
-                cipher = AES.new(keys[cipher], AES.MODE_CFB, eiv)
+                if cipher == 'blowfish':
+                    bs = Blowfish.block_size
+                    eiv = ciphertext[:bs]
+                    ciphertext = ciphertext[bs:]
+                    cipher = Blowfish.new(keys[cipher], Blowfish.MODE_CBC, eiv)
 
-            if cipher == 'blowfish':
-                bs = Blowfish.block_size
-                eiv = ciphertext[:bs]
-                ciphertext = ciphertext[bs:]
-                cipher = Blowfish.new(keys[cipher], Blowfish.MODE_CBC, eiv)
+                if cipher == 'cast5':
+                    bs = CAST.block_size
+                    eiv = ciphertext[:bs+2]
+                    ciphertext = ciphertext[bs+2:]
+                    cipher = CAST.new(keys[cipher], CAST.MODE_OPENPGP, eiv)
 
-            if cipher == 'cast5':
-                bs = CAST.block_size
-                eiv = ciphertext[:bs+2]
-                ciphertext = ciphertext[bs+2:]
-                cipher = CAST.new(keys[cipher], CAST.MODE_OPENPGP, eiv)
-
-            plaintext = cipher.decrypt(ciphertext)
+                plaintext = cipher.decrypt(ciphertext)
+            except ValueError:
+                raise InvalidDecryptionPassphrase
             ciphertext = plaintext
 
         # delete the .cast5.blowfish.aes256 file

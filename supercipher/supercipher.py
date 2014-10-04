@@ -1,6 +1,6 @@
 import os, sys, argparse
-from gnupg import InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey, InvalidDecryptionPassphrase
-from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive
+from gnupg import InvalidPubkeyLength, InvalidPubkeyNotHex, MissingPubkey, MissingSeckey
+from scfile import SuperCipherFile, InvalidSuperCipherFile, FutureFileVersion, InvalidArchive, InvalidDecryptionPassphrase
 
 import strings, helpers, common
 
@@ -20,7 +20,7 @@ def decrypt(filename, output_dir, passphrase=None):
     print strings._('decrypt_decrypting_file').format(filename)
 
     if not passphrase:
-        passphrase = helpers.get_passphrase(True)
+        passphrase = helpers.get_passphrase()
 
     scf = SuperCipherFile()
     try:
