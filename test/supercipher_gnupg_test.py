@@ -53,50 +53,11 @@ def test_gnupg_valid_pubkey_missing():
         assert False
 
 @with_setup(setup_clean_crypto_files)
-def test_gnupg_symmetric_decrypt_bad_passphrase():
-    passphrase = helper.random_string(128)
-    plaintext = helper.random_string(256)
-    
-    # make file with random data
-    open(plaintext_path, 'w').write(plaintext)
-
-    # encrypt
-    gpg.symmetric_encrypt('aes256', passphrase, plaintext_path)
-    helper.delete_file(plaintext_path)
-
-    # decrypt
-    try:
-        gpg.symmetric_decrypt(ciphertext_path, 'wrong passphrase')
-    except InvalidDecryptionPassphrase:
-        assert True
-    else:
-        assert False
-
-@with_setup(setup_clean_crypto_files)
-def test_gnupg_symmetric_encryption():
-    "should be able to encrypt with GnuPG.symmetric_encrypt and a passphrase, and decrypt with GnuPGP.symmetric_decrypt and same passphrase"
-    passphrase = helper.random_string(128)
-    plaintext = helper.random_string(256)
-    
-    # make file with random data
-    open(plaintext_path, 'w').write(plaintext)
-
-    # encrypt
-    gpg.symmetric_encrypt('aes256', passphrase, plaintext_path)
-    helper.delete_file(plaintext_path)
-
-    # decrypt
-    gpg.symmetric_decrypt(ciphertext_path, passphrase)
-    new_plaintext = open(plaintext_path, 'r').read()
-
-    assert plaintext == new_plaintext
-
-@with_setup(setup_clean_crypto_files)
 def test_gnupg_pubkey_encryption():
     "should be able to encrypt with GnuPG.pubkey_encrypt, and decrypt with GnuPGP.pubkey_decrypt with valid pubkey and seckey"
     passphrase = helper.random_string(128)
     plaintext = helper.random_string(256)
-    
+
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
@@ -115,7 +76,7 @@ def test_gnupg_pubkey_encryption_missing_seckey():
     "when encrypting with GnuPG.pubkey_encrypt, should fail to decrypt with GnuPGP.pubkey_decrypt if seckey is missing"
     passphrase = helper.random_string(128)
     plaintext = helper.random_string(256)
-    
+
     # make file with random data
     open(plaintext_path, 'w').write(plaintext)
 
