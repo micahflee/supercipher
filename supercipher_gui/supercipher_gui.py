@@ -25,6 +25,37 @@ class SuperCipherGui(QtGui.QWidget):
         self.window_icon = QtGui.QIcon("{0}/icon.png".format(common.supercipher_gui_dir))
         self.setWindowIcon(self.window_icon)
 
+    def create_layout(self):
+        if not hasattr(self, 'layout'):
+            self.layout = QtGui.QVBoxLayout()
+            self.setLayout(self.layout)
+
+    def start_choose(self):
+        # encrypt button
+        self.choose_encrypt_button = QtGui.QPushButton(strings._('gui_encrypt_button'))
+        self.choose_encrypt_button.clicked.connect(self.encrypt_clicked)
+        self.choose_decrypt_button = QtGui.QPushButton(strings._('gui_decrypt_button'))
+        self.choose_decrypt_button.clicked.connect(self.decrypt_clicked)
+
+        # main layout
+        self.create_layout()
+        self.layout.addWidget(self.encrypt_button)
+        self.layout.addWidget(self.decrypt_button)
+        self.setLayout(self.layout)
+        self.show()
+
+    def remove_choose_widgets(self):
+        self.layout.removeItem(self.choose_encrypt_button)
+        self.layout.removeItem(self.choose_decrypt_button)
+
+    def encrypt_clicked(self):
+        self.remove_choose_widgets()
+        self.start_encrypt()
+    
+    def decrypt_clicked(self):
+        self.remove_choose_widgets()
+        self.start_decrypt()
+
     def start_encrypt(self, encrypt_filenames=None, pubkey=None):
         # file selection
         file_selection = FileSelection()
@@ -36,20 +67,18 @@ class SuperCipherGui(QtGui.QWidget):
         passphrases = Passphrases()
 
         # main layout
-        self.layout = QtGui.QVBoxLayout()
+        self.create_layout()
         self.layout.addLayout(file_selection)
         self.layout.addLayout(passphrases)
-        self.setLayout(self.layout)
         self.show()
 
-    def start_decrypt(self, decrypt_filename):
+    def start_decrypt(self, decrypt_filename=None):
         # label
         label = QtGui.QLabel("Decrypt is not implemented yet")
 
         # main layout
-        self.layout = QtGui.QHBoxLayout()
+        self.create_layout()
         self.layout.addWidget(label)
-        self.setLayout(self.layout)
         self.show()
 
     def alert(self, msg, icon=QtGui.QMessageBox.Warning):
@@ -61,7 +90,7 @@ class SuperCipherGui(QtGui.QWidget):
         dialog.exec_()
 
 def main():
-    strings.load_strings(supercipher.supercipher_dir)
+    strings.load_strings(supercipher.common.supercipher_dir)
 
     # start the Qt app
     app = Application()
@@ -71,9 +100,6 @@ def main():
         # nothing to clean up yet
         pass
     app.connect(app, QtCore.SIGNAL("aboutToQuit()"), shutdown)
-
-    # launch the gui
-    gui = SuperCipherGui()
 
     # parse arguments
     parser = argparse.ArgumentParser()
@@ -98,9 +124,12 @@ def main():
         gui.alert(strings._('validation_dont_choose_two'))
         sys.exit(0)
 
-    action = 'encrypt'
-    if decrypt_filename:
+    if encrypt_filenames:
+        action = 'encrypt'
+    elif decrypt_filename:
         action = 'decrypt'
+    else:
+        action = 'none'
 
     # encrypt validation
     if action == 'encrypt':
@@ -137,11 +166,14 @@ def main():
             if not os.path.isfile(decrypt_filename):
                 gui.alert(strings._('validation_not_file').format(decrypt_filename))
                 sys.exit(0)
-    
-    # execute the action
-    if action == 'encrypt':
+
+    # launch the gui
+    gui = SuperCipherGui()
+    if action == 'none':
+        gui.start_choose()
+    elif action == 'encrypt':
         gui.start_encrypt(encrypt_filenames, pubkey)
-    else:
+    elif action == 'decrypt':
         gui.start_decrypt(decrypt_filename)
 
     # all done

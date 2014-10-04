@@ -36,5 +36,7 @@
     "scfile_writing_ciphertext": "Writing ciphertext file to disk",
     "scfile_decrypting_pubkey": "Decrypting pubkey layer",
     "scfile_decrypting_symmetric": "Decrypting symmetric layer with cipher {0}",
-    "scfile_extracting": "Extracting"
+    "scfile_extracting": "Extracting",
+    "gui_encrypt_button": "Encrypt",
+    "gui_decrypt_button": "Decrypt"
 }}
