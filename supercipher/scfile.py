@@ -30,7 +30,8 @@ class SuperCipherFile(object):
         self.tmp_dir = helpers.get_tmp_dir()
 
     def __del__(self):
-        helpers.destroy_tmp_dir(self.tmp_dir)
+        if hasattr(self, 'tmp_dir'):
+            helpers.destroy_tmp_dir(self.tmp_dir)
 
     def lock(self, output_filename, filenames, passphrase, pubkey=None):
         # random salt

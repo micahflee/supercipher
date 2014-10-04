@@ -98,7 +98,7 @@ def test_scfile_decrypt():
 
 def test_scfile_save_load():
     "should be able to save a SuperCipher file and reload it successfully"
-    salt = supercipher.helpers.get_random(16, 16)
+    salt = Random.new().read(16)
     archive_filename = os.path.abspath('test/data/archive.tar.gz')
 
     # save

@@ -1,10 +1,11 @@
 import os, hashlib, base64, shutil, getpass, tarfile
+from Crypto import Random
 import strings
 
 def get_tmp_dir():
     try:
         while True:
-            random_string = base64.b32encode(get_random(4, 16)).lower().replace('=','')
+            random_string = base64.b32encode(Random.new().read(8)).lower().replace('=','')
             tmp_dir = os.path.join('/tmp', 'supercipher_{0}'.format(random_string))
             if not os.path.exists(tmp_dir):
                 os.makedirs(tmp_dir, 0700)
