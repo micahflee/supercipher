@@ -1,9 +1,6 @@
 import os, hashlib, base64, shutil, getpass, tarfile
 import strings
 
-def get_random(bits_of_entropy, bytes_returned=64):
-    return hashlib.sha512(os.urandom(bits_of_entropy)).digest()[:bytes_returned]
-
 def get_tmp_dir():
     try:
         while True:

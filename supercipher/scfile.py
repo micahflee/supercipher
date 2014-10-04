@@ -34,7 +34,7 @@ class SuperCipherFile(object):
 
     def lock(self, output_filename, filenames, passphrase, pubkey=None):
         # random salt
-        salt = helpers.get_random(16, 16)
+        salt = Random.new().read(16)
 
         # compress files into archive
         archive_filename = os.path.join(self.tmp_dir, 'archive.tar.gz')
