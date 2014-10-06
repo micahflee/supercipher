@@ -26,9 +26,9 @@ class SuperCipherGui(QtGui.QWidget):
         self.setWindowIcon(self.window_icon)
 
     def create_layout(self):
-        if not hasattr(self, 'layout'):
-            self.layout = QtGui.QVBoxLayout()
-            self.setLayout(self.layout)
+        if not hasattr(self, 'main_layout'):
+            self.main_layout = QtGui.QVBoxLayout()
+            self.setLayout(self.main_layout)
 
     def start_choose(self):
         # encrypt button
@@ -39,19 +39,18 @@ class SuperCipherGui(QtGui.QWidget):
 
         # main layout
         self.create_layout()
-        self.layout.addWidget(self.encrypt_button)
-        self.layout.addWidget(self.decrypt_button)
-        self.setLayout(self.layout)
+        self.main_layout.addWidget(self.choose_encrypt_button)
+        self.main_layout.addWidget(self.choose_decrypt_button)
         self.show()
 
     def remove_choose_widgets(self):
-        self.layout.removeItem(self.choose_encrypt_button)
-        self.layout.removeItem(self.choose_decrypt_button)
+        self.main_layout.removeWidget(self.choose_encrypt_button)
+        self.main_layout.removeWidget(self.choose_decrypt_button)
 
     def encrypt_clicked(self):
         self.remove_choose_widgets()
         self.start_encrypt()
-    
+
     def decrypt_clicked(self):
         self.remove_choose_widgets()
         self.start_decrypt()
@@ -68,8 +67,8 @@ class SuperCipherGui(QtGui.QWidget):
 
         # main layout
         self.create_layout()
-        self.layout.addLayout(file_selection)
-        self.layout.addLayout(passphrases)
+        self.main_layout.addLayout(file_selection)
+        self.main_layout.addLayout(passphrases)
         self.show()
 
     def start_decrypt(self, decrypt_filename=None):
@@ -78,7 +77,7 @@ class SuperCipherGui(QtGui.QWidget):
 
         # main layout
         self.create_layout()
-        self.layout.addWidget(label)
+        self.main_layout.addWidget(label)
         self.show()
 
     def alert(self, msg, icon=QtGui.QMessageBox.Warning):
