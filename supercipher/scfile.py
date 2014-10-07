@@ -34,17 +34,24 @@ class SuperCipherFile(object):
             helpers.destroy_tmp_dir(self.tmp_dir)
 
     def lock(self, output_filename, filenames, passphrase, pubkey=None):
+        timer = helpers.Timer()
+
         # random salt
         salt = Random.new().read(16)
 
         # compress files into archive
+        timer.start()
         archive_filename = os.path.join(self.tmp_dir, 'archive.tar.gz')
         helpers.compress(filenames, archive_filename)
+        print strings._('time_compression').format(timer.stop())
 
         # derive keys from passphrase
+        timer.start()
         keys = self.stretch_passphrase(passphrase, salt)
+        print strings._('time_stretching').format(timer.stop())
 
         # encrypt with symmetric ciphers
+        timer.start()
         sys.stdout.write(strings._('encrypt_encrypting_cipher'))
         sys.stdout.flush()
 
@@ -93,6 +100,7 @@ class SuperCipherFile(object):
 
         # write the output file
         self.save(salt, current_filename, output_filename, bool(pubkey))
+        print strings._('time_encryption').format(timer.stop())
         print strings._('encrypt_encrypted_to').format(output_filename)
 
     def unlock(self, output_dir, input_filename, passphrase):

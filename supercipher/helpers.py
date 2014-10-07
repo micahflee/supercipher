@@ -1,4 +1,4 @@
-import os, hashlib, base64, shutil, getpass, tarfile
+import os, hashlib, base64, shutil, getpass, tarfile, time
 from Crypto import Random
 import strings
 
@@ -56,4 +56,16 @@ def compress(filenames, archive_filename):
     with tarfile.open(archive_filename, 'w:gz') as tar:
         for filename in filenames:
             tar.add(filename, recursive=True, filter=reset)
+
+class Timer(object):
+    def __init__(self):
+        self.start()
+
+    def start(self):
+        self.start_time = time.time()
+
+    def stop(self):
+        self.stop_time = time.time()
+        diff = self.stop_time - self.start_time
+        return round(diff, 2)
 

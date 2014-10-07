@@ -37,6 +37,9 @@
     "scfile_decrypting_pubkey": "Decrypting pubkey layer",
     "scfile_decrypting_symmetric": "Decrypting symmetric layer with cipher {0}",
     "scfile_extracting": "Extracting",
+    "time_compression": "Compressed in {0} seconds",
+    "time_stretching": "Derived keys in {0} seconds",
+    "time_encryption": "Encrypted in {0} seconds",
     "gui_encrypt_button": "Encrypt",
     "gui_decrypt_button": "Decrypt"
 }}
